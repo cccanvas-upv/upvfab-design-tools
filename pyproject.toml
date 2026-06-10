@@ -20,6 +20,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+plot = [
+    "PyQt6",
+]
 modesolver = [
     "femwell",
 ]
