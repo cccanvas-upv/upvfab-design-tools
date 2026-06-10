@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "upvfab-design-tools"
+version = "0.1.0"
+description = "Python tools for photonic integrated circuit design and simulation at UPVfab"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "Pascual Munoz", email = "pascual.munoz@upv.es" },
+    { name = "Camilo Cano", email = "camilo.cano@upv.es" }
+]
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+modesolver = [
+    "femwell",
+]
+
+tidy3d = [
+    "tidy3d",
+]
+
+layout = [
+    "gdstk",
+    "shapely",
+]
+
+dev = [
+    "pytest",
+    "ruff",
+    "black",
+    "ipykernel",
+]
+
+all = [
+    "femwell",
+    "tidy3d",
+    "gdstk",
+    "shapely",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
