@@ -106,7 +106,7 @@ def plot_cross_section(cross_section: CrossSection, ax=None, show_names=True):
 #
 # 1. Whole domain is SiO2.
 # 2. Upper region is BCB.
-# 3. Upper-left window is Air.
+# 3. Upper-Upper window is Air.
 # 4. SiN core is drawn on top.
 # ----------------------------------------------------------------------
 
@@ -128,13 +128,15 @@ air_region = Rectangle(
     name="Air",
 )
 
-sin_core = Rectangle(
-    x_min=-0.5,
-    x_max=0.5,
+sin_core = Trapezoid.from_sidewall_angle(
+    x_center=0.0,
     z_min=0.0,
-    z_max=0.3,
+    height=0.3,
+    width=1.0,
+    width_reference="top",
+    sidewall_angle_deg=6.0,
     material=SILICON_NITRIDE,
-    name="SiN",
+    name="rib ridge",
 )
 
 xs = CrossSection(

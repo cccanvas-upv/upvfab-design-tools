@@ -3776,6 +3776,9 @@ layout = [
 ]
 modesolver = [
     { name = "femwell" },
+    { name = "meshio" },
+    { name = "scikit-fem" },
+    { name = "shapely" },
 ]
 plot = [
     { name = "pyqt6" },
@@ -3793,14 +3796,17 @@ requires-dist = [
     { name = "gdstk", marker = "extra == 'layout'" },
     { name = "ipykernel", marker = "extra == 'dev'" },
     { name = "matplotlib" },
+    { name = "meshio", marker = "extra == 'modesolver'" },
     { name = "numpy" },
     { name = "pyqt6", marker = "extra == 'plot'" },
     { name = "pytest", marker = "extra == 'dev'" },
     { name = "pyyaml" },
     { name = "ruff", marker = "extra == 'dev'" },
+    { name = "scikit-fem", marker = "extra == 'modesolver'" },
     { name = "scipy" },
     { name = "shapely", marker = "extra == 'all'" },
     { name = "shapely", marker = "extra == 'layout'" },
+    { name = "shapely", marker = "extra == 'modesolver'" },
     { name = "tidy3d", marker = "extra == 'all'" },
     { name = "tidy3d", marker = "extra == 'tidy3d'" },
 ]

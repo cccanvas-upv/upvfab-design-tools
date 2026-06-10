@@ -25,6 +25,9 @@ plot = [
 ]
 modesolver = [
     "femwell",
+    "shapely",
+    "scikit-fem",
+    "meshio",
 ]
 
 tidy3d = [

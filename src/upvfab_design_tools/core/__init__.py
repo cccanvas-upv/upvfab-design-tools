@@ -1,5 +1,5 @@
 from .cross_section import CrossSection
-
+from .visualization import plot_cross_section, save_figure
 from .waveguides import rib_waveguide, strip_waveguide
 
 from .geometry import (
@@ -37,5 +37,7 @@ __all__ = [
     "GeometryPrimitive",
     "CrossSection",
     "strip_waveguide",
-    "rib_waveguide"
+    "rib_waveguide",
+    "plot_cross_section",
+    "save_figure",
 ]
