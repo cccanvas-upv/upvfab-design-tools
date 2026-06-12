@@ -80,6 +80,7 @@ result = solver.solve(
 )
 
 # Need to adjust because in a grid I might need to switch from one field component to another. TE/TM
+# Also need to add the option to plot "abs" or "real"
 fig, axs = plot_modes_grid(
     result,
     field_component="Ex",
@@ -87,8 +88,11 @@ fig, axs = plot_modes_grid(
     xlim=(-2, 2),
     zlim=(-1, 1),
 )
-plt.show()
-save_figure(fig, "modes_ex.png")
+try:
+    plt.show()
+except:
+    save_figure(fig, "modes_ex.png")
+    pass
 
 for mode in result.modes:
     print(
