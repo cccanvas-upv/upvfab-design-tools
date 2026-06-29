@@ -17,8 +17,8 @@ from upvfab_design_tools.core.visualization import (
 bcb_region = Rectangle(
     x_min=-4.0,
     x_max=4.0,
-    z_min=0.3,
-    z_max=0.35,
+    z_min=0.0,
+    z_max=0.5,
     material=BCB,
     name="BCB",
 )
@@ -26,7 +26,7 @@ bcb_region = Rectangle(
 air_region = Rectangle(
     x_min=-4.0,
     x_max=4.0,
-    z_min=0.35,
+    z_min=0.5,
     z_max=2.0,
     material=AIR,
     name="Air",
@@ -83,7 +83,8 @@ result = solver.solve(
 # Also need to add the option to plot "abs" or "real"
 fig, axs = plot_modes_grid(
     result,
-    field_component="Ex",
+    field_component="auto",
+    field_part ="mag",
     max_modes=4,
     xlim=(-2, 2),
     zlim=(-1, 1),

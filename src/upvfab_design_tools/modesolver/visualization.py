@@ -10,7 +10,8 @@ from skfem import ElementDG, ElementTriP1, ElementVector
 from .results import Mode, ModeSolverResult
 
 
-FieldComponent = Literal["Ex", "Ey"]
+FieldComponent = Literal["auto", "Ex", "Ey"]
+FieldPart = Literal["mag", "phase", "real"]
 
 
 def _get_raw_mode(mode: Mode):
@@ -66,7 +67,8 @@ def plot_mode(
     *,
     xlim: tuple[float, float] | None = None,
     zlim: tuple[float, float] | None = None,
-    field_component: FieldComponent = "Ex",
+    field_component: FieldComponent = "auto",
+    field_part: FieldPart = "real",
     show_mesh: bool = True,
     ax=None,
 ):
@@ -82,7 +84,10 @@ def plot_mode(
     zlim:
         Optional z-axis limits in micrometers.
     field_component:
-        Field component to plot. Either "Ex" or "Ey".
+        Field component to plot. ``"auto"`` selects Ex for a TE-dominant
+        mode and Ey for a TM-dominant mode using the modal fractions.
+    field_part:
+        Field quantity to display: magnitude, phase, or real part.
     show_mesh:
         If True, draw FEMWELL mesh boundaries.
     ax:
@@ -98,14 +103,16 @@ def plot_mode(
 
     et_x, et_x_basis, et_y, et_y_basis = _get_transverse_fields(raw_mode)
 
-    if field_component == "Ex":
+    selected_component = _select_field_component(mode, field_component)
+
+    if selected_component == "Ex":
         field = et_x
         basis = et_x_basis
-    elif field_component == "Ey":
+    else:
         field = et_y
         basis = et_y_basis
-    else:
-        raise ValueError("field_component must be either 'Ex' or 'Ey'.")
+
+    plot_field, cmap, vmin, vmax = _prepare_field_for_plot(field, field_part)
 
     if ax is None:
         fig, ax = plt.subplots(figsize=(6, 4))
@@ -121,22 +128,13 @@ def plot_mode(
                 boundaries_only=True,
             )
 
-    vabs = np.nanmax(np.abs(field))
-
-    if vabs == 0 or np.isnan(vabs):
-        vmin = None
-        vmax = None
-    else:
-        vmin = -vabs
-        vmax = vabs
-
     basis.plot(
-        field,
+        plot_field,
         shading="gouraud",
         ax=ax,
         vmin=vmin,
         vmax=vmax,
-        cmap="bwr",
+        cmap=cmap,
         colorbar=True,
     )
 
@@ -144,7 +142,7 @@ def plot_mode(
     ax.set_xlabel("x [µm]")
     ax.set_ylabel("z [µm]")
 
-    title = _mode_title(mode, field_component)
+    title = _mode_title(mode, selected_component, field_part)
     ax.set_title(title)
 
     if xlim is not None:
@@ -161,10 +159,13 @@ def plot_mode_ex_ey(
     *,
     xlim: tuple[float, float] | None = None,
     zlim: tuple[float, float] | None = None,
+    field_part: FieldPart = "real",
     show_mesh: bool = True,
 ):
     """
     Plot Ex and Ey transverse field components of a mode.
+
+    ``field_part`` selects whether magnitude, phase, or real part is shown.
     """
 
     raw_mode = _get_raw_mode(mode)
@@ -185,6 +186,8 @@ def plot_mode_ex_ey(
     ]
 
     for ax, (component_name, field, basis) in zip(axs, fields):
+        plot_field, cmap, vmin, vmax = _prepare_field_for_plot(field, field_part)
+
         if show_mesh:
             raw_mode.basis.mesh.draw(ax=ax, boundaries_only=True)
 
@@ -194,28 +197,19 @@ def plot_mode_ex_ey(
                     boundaries_only=True,
                 )
 
-        vabs = np.nanmax(np.abs(field))
-
-        if vabs == 0 or np.isnan(vabs):
-            vmin = None
-            vmax = None
-        else:
-            vmin = -vabs
-            vmax = vabs
-
         basis.plot(
-            field,
+            plot_field,
             shading="gouraud",
             ax=ax,
             vmin=vmin,
             vmax=vmax,
-            cmap="bwr",
+            cmap=cmap,
             colorbar=True,
         )
 
         ax.set_aspect("equal", adjustable="box")
         ax.set_xlabel("x [µm]")
-        ax.set_title(_mode_title(mode, component_name))
+        ax.set_title(_mode_title(mode, component_name, field_part))
 
         if xlim is not None:
             ax.set_xlim(xlim)
@@ -233,7 +227,8 @@ def plot_mode_ex_ey(
 def plot_modes_grid(
     result: ModeSolverResult,
     *,
-    field_component: FieldComponent = "Ex",
+    field_component: FieldComponent = "auto",
+    field_part: FieldPart = "real",
     max_modes: int | None = None,
     xlim: tuple[float, float] | None = None,
     zlim: tuple[float, float] | None = None,
@@ -243,6 +238,8 @@ def plot_modes_grid(
     Plot several modes in a vertical grid.
 
     This is useful for quickly checking all modes returned by the solver.
+    By default, each mode uses Ex when it is TE-dominant and Ey when it is
+    TM-dominant.
     """
 
     modes = result.modes
@@ -268,6 +265,7 @@ def plot_modes_grid(
         plot_mode(
             mode,
             field_component=field_component,
+            field_part=field_part,
             xlim=xlim,
             zlim=zlim,
             show_mesh=show_mesh,
@@ -353,14 +351,87 @@ def save_figure(fig, filename: str | Path, *, dpi: int = 300) -> Path:
     return path
 
 
-def _mode_title(mode: Mode, component: str) -> str:
-    neff = np.real(mode.neff)
+def _select_field_component(
+    mode: Mode,
+    field_component: FieldComponent,
+) -> Literal["Ex", "Ey"]:
+    """Resolve an explicit or polarization-dependent field component."""
+
+    if field_component in {"Ex", "Ey"}:
+        return field_component
+
+    if field_component != "auto":
+        raise ValueError("field_component must be 'auto', 'Ex', or 'Ey'.")
 
     if mode.te_fraction is None or mode.tm_fraction is None:
-        return f"Mode {mode.index} | {component} | n_eff = {neff:.6f}"
+        raise ValueError(
+            "Automatic field-component selection requires both TE and TM "
+            "fractions. Set field_component explicitly to 'Ex' or 'Ey'."
+        )
+
+    if mode.te_fraction > mode.tm_fraction:
+        return "Ex"
+
+    if mode.tm_fraction > mode.te_fraction:
+        return "Ey"
+
+    raise ValueError(
+        "Automatic field-component selection is ambiguous because the TE and "
+        "TM fractions are equal. Set field_component explicitly to 'Ex' or 'Ey'."
+    )
+
+
+def _prepare_field_for_plot(
+    field,
+    field_part: FieldPart,
+) -> tuple[np.ndarray, str, float | None, float | None]:
+    """Transform a complex field and choose suitable plotting limits."""
+
+    field_array = np.asarray(field)
+
+    if field_part == "mag":
+        plot_field = np.abs(field_array)
+        maximum = _finite_absolute_max(plot_field)
+        return plot_field, "viridis", 0.0, maximum
+
+    if field_part == "phase":
+        return np.angle(field_array), "twilight", -np.pi, np.pi
+
+    if field_part == "real":
+        plot_field = np.real(field_array)
+        maximum = _finite_absolute_max(plot_field)
+        minimum = -maximum if maximum is not None else None
+        return plot_field, "bwr", minimum, maximum
+
+    raise ValueError("field_part must be 'mag', 'phase', or 'real'.")
+
+
+def _finite_absolute_max(field: np.ndarray) -> float | None:
+    finite_values = np.abs(field[np.isfinite(field)])
+
+    if finite_values.size == 0:
+        return None
+
+    maximum = float(np.max(finite_values))
+    return maximum if maximum > 0 else None
+
+
+def _mode_title(mode: Mode, component: str, field_part: FieldPart) -> str:
+    neff = np.real(mode.neff)
+    field_label = {
+        "mag": "magnitude",
+        "phase": "phase",
+        "real": "real",
+    }[field_part]
+
+    if mode.te_fraction is None or mode.tm_fraction is None:
+        return (
+            f"Mode {mode.index} | {component} {field_label} | "
+            f"n_eff = {neff:.6f}"
+        )
 
     return (
-        f"Mode {mode.index} | {component} | "
+        f"Mode {mode.index} | {component} {field_label} | "
         f"n_eff = {neff:.6f} | "
         f"TE = {mode.te_fraction:.3f}, TM = {mode.tm_fraction:.3f}"
     )
