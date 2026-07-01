@@ -89,10 +89,13 @@ fig, axs = plot_modes_grid(
     xlim=(-2, 2),
     zlim=(-1, 1),
 )
+fig_neff, ax_neff = plot_effective_indices(result)
+
 try:
     plt.show()
 except:
     save_figure(fig, "modes_ex.png")
+    save_figure(fig_neff, "effective_indices.png")
     pass
 
 for mode in result.modes:

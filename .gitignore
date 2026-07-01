@@ -12,3 +12,9 @@ wheels/
 *.png
 
 AGENTS.md
+
+.agents/
+.codex/
+.pytest_cache/
+.ruff_cache/
+.vscode/
