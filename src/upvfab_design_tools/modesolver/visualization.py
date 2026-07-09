@@ -5,61 +5,17 @@ from typing import Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
-from skfem import ElementDG, ElementTriP1, ElementVector
 
+from .postprocessing import (
+    FieldComponent,
+    get_raw_mode,
+    get_transverse_fields,
+    select_field_component,
+)
 from .results import Mode, ModeSolverResult
 
 
-FieldComponent = Literal["auto", "Ex", "Ey"]
 FieldPart = Literal["mag", "phase", "real"]
-
-
-def _get_raw_mode(mode: Mode):
-    """
-    Return the backend-specific mode object.
-
-    For FemwellModeSolver, this is the original FEMWELL mode object.
-    """
-
-    if isinstance(mode, Mode):
-        if mode.raw is None:
-            raise ValueError("Mode does not contain a raw backend mode.")
-
-        return mode.raw
-
-    return mode
-
-
-def _get_transverse_fields(raw_mode):
-    """
-    Extract transverse electric field components from a FEMWELL mode.
-
-    Returns
-    -------
-    et_x:
-        x component of the transverse electric field.
-    et_x_basis:
-        basis associated with et_x.
-    et_y:
-        y component of the transverse electric field.
-    et_y_basis:
-        basis associated with et_y.
-    """
-
-    (et, et_basis), _ = raw_mode.basis.split(raw_mode.E)
-
-    plot_basis = et_basis.with_element(
-        ElementVector(
-            ElementDG(
-                ElementTriP1()
-            )
-        )
-    )
-
-    et_xy = plot_basis.project(et_basis.interpolate(et))
-    (et_x, et_x_basis), (et_y, et_y_basis) = plot_basis.split(et_xy)
-
-    return et_x, et_x_basis, et_y, et_y_basis
 
 
 def plot_mode(
@@ -99,11 +55,11 @@ def plot_mode(
         Matplotlib figure and axis.
     """
 
-    raw_mode = _get_raw_mode(mode)
+    raw_mode = get_raw_mode(mode)
 
-    et_x, et_x_basis, et_y, et_y_basis = _get_transverse_fields(raw_mode)
+    et_x, et_x_basis, et_y, et_y_basis = get_transverse_fields(raw_mode)
 
-    selected_component = _select_field_component(mode, field_component)
+    selected_component = select_field_component(mode, field_component)
 
     if selected_component == "Ex":
         field = et_x
@@ -168,9 +124,9 @@ def plot_mode_ex_ey(
     ``field_part`` selects whether magnitude, phase, or real part is shown.
     """
 
-    raw_mode = _get_raw_mode(mode)
+    raw_mode = get_raw_mode(mode)
 
-    et_x, et_x_basis, et_y, et_y_basis = _get_transverse_fields(raw_mode)
+    et_x, et_x_basis, et_y, et_y_basis = get_transverse_fields(raw_mode)
 
     fig, axs = plt.subplots(
         1,
@@ -349,36 +305,6 @@ def save_figure(fig, filename: str | Path, *, dpi: int = 300) -> Path:
     path = Path(filename)
     fig.savefig(path, dpi=dpi, bbox_inches="tight")
     return path
-
-
-def _select_field_component(
-    mode: Mode,
-    field_component: FieldComponent,
-) -> Literal["Ex", "Ey"]:
-    """Resolve an explicit or polarization-dependent field component."""
-
-    if field_component in {"Ex", "Ey"}:
-        return field_component
-
-    if field_component != "auto":
-        raise ValueError("field_component must be 'auto', 'Ex', or 'Ey'.")
-
-    if mode.te_fraction is None or mode.tm_fraction is None:
-        raise ValueError(
-            "Automatic field-component selection requires both TE and TM "
-            "fractions. Set field_component explicitly to 'Ex' or 'Ey'."
-        )
-
-    if mode.te_fraction > mode.tm_fraction:
-        return "Ex"
-
-    if mode.tm_fraction > mode.te_fraction:
-        return "Ey"
-
-    raise ValueError(
-        "Automatic field-component selection is ambiguous because the TE and "
-        "TM fractions are equal. Set field_component explicitly to 'Ex' or 'Ey'."
-    )
 
 
 def _prepare_field_for_plot(

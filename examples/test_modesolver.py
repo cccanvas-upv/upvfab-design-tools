@@ -1,5 +1,5 @@
 from upvfab_design_tools.core.cross_section import CrossSection
-from upvfab_design_tools.core.geometry import Rectangle
+from upvfab_design_tools.core.geometry import Rectangle, Trapezoid
 from upvfab_design_tools.core.materials import (
     AIR,
     BCB,
@@ -32,13 +32,15 @@ air_region = Rectangle(
     name="Air",
 )
 
-sin_core = Rectangle(
-    x_min=-0.5,
-    x_max=0.5,
+sin_core = Trapezoid.from_sidewall_angle(
+    x_center=0.0,
     z_min=0.0,
-    z_max=0.3,
+    height=0.3,
+    width=1.0,
+    width_reference="top",
+    sidewall_angle_deg=6.0,
     material=SILICON_NITRIDE,
-    name="core",
+    name="rib ridge",
 )
 
 xs = CrossSection(
@@ -89,13 +91,13 @@ fig, axs = plot_modes_grid(
     xlim=(-2, 2),
     zlim=(-1, 1),
 )
-fig_neff, ax_neff = plot_effective_indices(result)
+# fig_neff, ax_neff = plot_effective_indices(result)
 
 try:
     plt.show()
 except:
     save_figure(fig, "modes_ex.png")
-    save_figure(fig_neff, "effective_indices.png")
+    # save_figure(fig_neff, "effective_indices.png")
     pass
 
 for mode in result.modes:

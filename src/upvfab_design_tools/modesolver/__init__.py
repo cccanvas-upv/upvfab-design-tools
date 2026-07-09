@@ -1,5 +1,6 @@
 from .base import BaseModeSolver
 from .femwell_solver import FemwellModeSolver
+from .postprocessing import sample_mode_profile, sample_mode_profiles
 from .results import Mode, ModeSolverResult
 from .visualization import (
     plot_effective_indices,
@@ -15,6 +16,8 @@ __all__ = [
     "FemwellModeSolver",
     "Mode",
     "ModeSolverResult",
+    "sample_mode_profile",
+    "sample_mode_profiles",
     "plot_mode",
     "plot_mode_ex_ey",
     "plot_modes_grid",
