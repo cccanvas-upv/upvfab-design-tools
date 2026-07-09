@@ -13,6 +13,8 @@ from upvfab_design_tools.core.visualization import (
     plot_cross_section,
     save_figure,
 )
+from upvfab_design_tools.core.waveguides import strip_waveguide
+
 
 bcb_region = Rectangle(
     x_min=-4.0,
@@ -32,29 +34,47 @@ air_region = Rectangle(
     name="Air",
 )
 
-sin_core = Trapezoid.from_sidewall_angle(
-    x_center=0.0,
-    z_min=0.0,
-    height=0.3,
-    width=1.0,
-    width_reference="top",
-    sidewall_angle_deg=6.0,
-    material=SILICON_NITRIDE,
-    name="rib ridge",
-)
+# sin_core = Trapezoid.from_sidewall_angle(
+#     x_center=0.0,
+#     z_min=0.0,
+#     height=0.3,
+#     width=1.0,
+#     width_reference="top",
+#     sidewall_angle_deg=6.0,
+#     material=SILICON_NITRIDE,
+#     name="rib ridge",
+# )
 
-xs = CrossSection(
-    name="complex_sin_cross_section",
-    background_material=THERMAL_SILICON_DIOXIDE,
-    x_min=-4.0,
-    x_max=4.0,
-    z_min=-2.0,
-    z_max=2.0,
-    structures=(
-        bcb_region,
-        air_region,
-        sin_core,
-    ),
+# xs = CrossSection(
+#     name="complex_sin_cross_section",
+#     background_material=THERMAL_SILICON_DIOXIDE,
+#     x_min=-4.0,
+#     x_max=4.0,
+#     z_min=-2.0,
+#     z_max=2.0,
+#     structures=(
+#         bcb_region,
+#         air_region,
+#         sin_core,
+#     ),
+# )
+
+xs = strip_waveguide(
+    width = 3.0,
+    height=  0.3,
+    core_material = SILICON_NITRIDE,
+    background_material = THERMAL_SILICON_DIOXIDE,
+    x_center = 0.0,
+    z_min = 0.0,
+    sidewall_angle_deg = 0.0,
+    width_reference = "bottom",
+    x_span = 10.0,
+    bottom_margin = 3.0,
+    top_margin = 3.0,
+    # surrounding_regions = (
+    #     bcb_region,
+    #     air_region,
+    # ),
 )
 
 fig, ax = plot_cross_section(
@@ -66,9 +86,9 @@ fig, ax = plot_cross_section(
 plt.show()
 
 solver = FemwellModeSolver(
-    default_resolution=0.4,
-    min_resolution=0.02,
-    resolution_factor=5.0,
+    default_resolution=0.3,
+    min_resolution=0.01,
+    resolution_factor=10.0,
     filter_guided=True,
     reference_material=THERMAL_SILICON_DIOXIDE,
     guided_tolerance=1e-2,
@@ -78,7 +98,7 @@ solver = FemwellModeSolver(
 result = solver.solve(
     cross_section=xs,
     wavelength_um=1.55,
-    num_modes=4,
+    num_modes=8,
 )
 
 # Need to adjust because in a grid I might need to switch from one field component to another. TE/TM

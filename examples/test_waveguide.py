@@ -99,16 +99,14 @@ def plot_cross_section(cross_section: CrossSection, ax=None, show_names=True):
     return fig, ax
 
 
-# ----------------------------------------------------------------------
+
 # Complex cross-section example
-# ----------------------------------------------------------------------
 # Interpretation:
 #
 # 1. Whole domain is SiO2.
 # 2. Upper region is BCB.
 # 3. Upper-Upper window is Air.
 # 4. SiN core is drawn on top.
-# ----------------------------------------------------------------------
 
 bcb_region = Rectangle(
     x_min=-4.0,
