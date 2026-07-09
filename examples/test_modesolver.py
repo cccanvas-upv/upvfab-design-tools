@@ -43,15 +43,29 @@ air_region = Rectangle(
     name="Air",
 )
 
-# sin_core = Trapezoid.from_sidewall_angle(
-#     x_center=0.0,
-#     z_min=0.0,
-#     height=0.3,
-#     width=1.0,
-#     width_reference="top",
-#     sidewall_angle_deg=6.0,
-#     material=SILICON_NITRIDE,
-#     name="rib ridge",
+sin_core = Trapezoid.from_sidewall_angle(
+    x_center=0.0,
+    z_min=0.0,
+    height=wvgd_thickness,
+    width=wvgd_width,
+    width_reference="bottom",
+    sidewall_angle_deg=6.0,
+    material=SILICON_NITRIDE,
+    name="Core",
+)
+
+# xs = CrossSection(
+#     name="sin_cross_section",
+#     background_material=THERMAL_SILICON_DIOXIDE,
+#     x_min=-0.5*window_width,
+#     x_max=0.5*window_width,
+#     z_min=-bottom_margin,
+#     z_max=wvgd_thickness + top_margin,
+#     structures=(
+#         # bcb_region,
+#         # air_region,
+#         sin_core,
+#     ),
 # )
 
 # xs = CrossSection(
@@ -107,7 +121,7 @@ solver = FemwellModeSolver(
 result = solver.solve(
     cross_section=xs,
     wavelength_um=1.55,
-    num_modes=8,
+    num_modes=4,
 )
 
 # Need to adjust because in a grid I might need to switch from one field component to another. TE/TM
