@@ -15,21 +15,30 @@ from upvfab_design_tools.core.visualization import (
 )
 from upvfab_design_tools.core.waveguides import strip_waveguide
 
+# Waveguide parameters 
+wvgd_width = 1.0
+wvgd_thickness = 0.3
+bcb_thickness = 0.5
+
+# Modesolver parameters
+window_width = 10.0 
+bottom_margin = 3.0
+top_margin = 3.0
 
 bcb_region = Rectangle(
-    x_min=-4.0,
-    x_max=4.0,
+    x_min=-0.5*window_width,
+    x_max=0.5*window_width,
     z_min=0.0,
-    z_max=0.5,
+    z_max=bcb_thickness,
     material=BCB,
     name="BCB",
 )
 
 air_region = Rectangle(
-    x_min=-4.0,
-    x_max=4.0,
-    z_min=0.5,
-    z_max=2.0,
+    x_min=-0.5*window_width,
+    x_max=0.5*window_width,
+    z_min=bcb_thickness,
+    z_max=bcb_thickness + bottom_margin,
     material=AIR,
     name="Air",
 )
@@ -60,21 +69,21 @@ air_region = Rectangle(
 # )
 
 xs = strip_waveguide(
-    width = 3.0,
-    height=  0.3,
+    width = wvgd_width,
+    height=  wvgd_thickness,
     core_material = SILICON_NITRIDE,
     background_material = THERMAL_SILICON_DIOXIDE,
     x_center = 0.0,
     z_min = 0.0,
     sidewall_angle_deg = 0.0,
     width_reference = "bottom",
-    x_span = 10.0,
-    bottom_margin = 3.0,
-    top_margin = 3.0,
-    # surrounding_regions = (
-    #     bcb_region,
-    #     air_region,
-    # ),
+    x_span = window_width,
+    bottom_margin = bottom_margin,
+    top_margin = top_margin,
+    surrounding_regions = (
+        bcb_region,
+        air_region,
+    ),
 )
 
 fig, ax = plot_cross_section(
