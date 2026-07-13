@@ -7,6 +7,7 @@ from .postprocessing import (
     sample_mode_profiles,
 )
 from .results import Mode, ModeSolverResult
+from .tidy3d_solver import Tidy3DModeRaw, Tidy3DModeSolver
 from .visualization import (
     plot_effective_indices,
     plot_epsilon,
@@ -23,6 +24,8 @@ __all__ = [
     "Mode",
     "ModeSolverResult",
     "SUPPORTED_PROFILE_SAMPLING_BACKENDS",
+    "Tidy3DModeRaw",
+    "Tidy3DModeSolver",
     "sample_mode_profile",
     "sample_mode_profiles",
     "plot_mode",

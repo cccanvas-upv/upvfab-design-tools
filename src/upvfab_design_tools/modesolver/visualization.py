@@ -45,7 +45,7 @@ def plot_mode(
     field_part:
         Field quantity to display: magnitude, phase, or real part.
     show_mesh:
-        If True, draw FEMWELL mesh boundaries.
+        If True, draw FEMWELL mesh boundaries or Tidy3D cross-section outlines.
     ax:
         Optional Matplotlib axis.
 
@@ -54,6 +54,47 @@ def plot_mode(
     fig, ax
         Matplotlib figure and axis.
     """
+
+    backend = _mode_backend(mode)
+
+    if backend == "femwell":
+        return _plot_femwell_mode(
+            mode,
+            xlim=xlim,
+            zlim=zlim,
+            field_component=field_component,
+            field_part=field_part,
+            show_mesh=show_mesh,
+            ax=ax,
+        )
+
+    if backend == "tidy3d":
+        return _plot_tidy3d_mode(
+            mode,
+            xlim=xlim,
+            zlim=zlim,
+            field_component=field_component,
+            field_part=field_part,
+            show_mesh=show_mesh,
+            ax=ax,
+        )
+
+    raise NotImplementedError(
+        f"Mode plotting is not implemented for backend '{mode.backend}'."
+    )
+
+
+def _plot_femwell_mode(
+    mode: Mode,
+    *,
+    xlim: tuple[float, float] | None,
+    zlim: tuple[float, float] | None,
+    field_component: FieldComponent,
+    field_part: FieldPart,
+    show_mesh: bool,
+    ax,
+):
+    """Plot one FEMWELL transverse field component."""
 
     raw_mode = get_raw_mode(mode)
 
@@ -110,6 +151,59 @@ def plot_mode(
     return fig, ax
 
 
+def _plot_tidy3d_mode(
+    mode: Mode,
+    *,
+    xlim: tuple[float, float] | None,
+    zlim: tuple[float, float] | None,
+    field_component: FieldComponent,
+    field_part: FieldPart,
+    show_mesh: bool,
+    ax,
+):
+    """Plot one Tidy3D transverse field component.
+
+    Tidy3D stores the vertical cross-section coordinate as ``y``. The plot
+    labels it as ``z`` to preserve the UPVfab cross-section convention.
+    """
+
+    selected_component = select_field_component(mode, field_component)
+    x_um, z_um, field = _tidy3d_field_array(mode, selected_component)
+    plot_field, cmap, vmin, vmax = _prepare_field_for_plot(field, field_part)
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(6, 4))
+    else:
+        fig = ax.figure
+
+    image = ax.pcolormesh(
+        x_um,
+        z_um,
+        plot_field.T,
+        shading="auto",
+        cmap=cmap,
+        vmin=vmin,
+        vmax=vmax,
+    )
+    fig.colorbar(image, ax=ax)
+
+    if show_mesh:
+        _draw_tidy3d_cross_section_overlay(mode, ax)
+
+    ax.set_aspect("equal", adjustable="box")
+    ax.set_xlabel("x [µm]")
+    ax.set_ylabel("z [µm]")
+    ax.set_title(_mode_title(mode, selected_component, field_part))
+
+    if xlim is not None:
+        ax.set_xlim(xlim)
+
+    if zlim is not None:
+        ax.set_ylim(zlim)
+
+    return fig, ax
+
+
 def plot_mode_ex_ey(
     mode: Mode,
     *,
@@ -123,6 +217,41 @@ def plot_mode_ex_ey(
 
     ``field_part`` selects whether magnitude, phase, or real part is shown.
     """
+
+    backend = _mode_backend(mode)
+
+    if backend == "femwell":
+        return _plot_femwell_mode_ex_ey(
+            mode,
+            xlim=xlim,
+            zlim=zlim,
+            field_part=field_part,
+            show_mesh=show_mesh,
+        )
+
+    if backend == "tidy3d":
+        return _plot_tidy3d_mode_ex_ey(
+            mode,
+            xlim=xlim,
+            zlim=zlim,
+            field_part=field_part,
+            show_mesh=show_mesh,
+        )
+
+    raise NotImplementedError(
+        f"Mode plotting is not implemented for backend '{mode.backend}'."
+    )
+
+
+def _plot_femwell_mode_ex_ey(
+    mode: Mode,
+    *,
+    xlim: tuple[float, float] | None,
+    zlim: tuple[float, float] | None,
+    field_part: FieldPart,
+    show_mesh: bool,
+):
+    """Plot FEMWELL Ex and Ey transverse field components."""
 
     raw_mode = get_raw_mode(mode)
 
@@ -174,6 +303,40 @@ def plot_mode_ex_ey(
             ax.set_ylim(zlim)
 
     axs[0].set_ylabel("z [µm]")
+
+    fig.tight_layout()
+
+    return fig, axs
+
+
+def _plot_tidy3d_mode_ex_ey(
+    mode: Mode,
+    *,
+    xlim: tuple[float, float] | None,
+    zlim: tuple[float, float] | None,
+    field_part: FieldPart,
+    show_mesh: bool,
+):
+    """Plot Tidy3D Ex and Ey transverse field components."""
+
+    fig, axs = plt.subplots(
+        1,
+        2,
+        figsize=(10, 4),
+        sharex=True,
+        sharey=True,
+    )
+
+    for ax, component_name in zip(axs, ("Ex", "Ey"), strict=True):
+        _plot_tidy3d_mode(
+            mode,
+            xlim=xlim,
+            zlim=zlim,
+            field_component=component_name,
+            field_part=field_part,
+            show_mesh=show_mesh,
+            ax=ax,
+        )
 
     fig.tight_layout()
 
@@ -360,4 +523,119 @@ def _mode_title(mode: Mode, component: str, field_part: FieldPart) -> str:
         f"Mode {mode.index} | {component} {field_label} | "
         f"n_eff = {neff:.6f} | "
         f"TE = {mode.te_fraction:.3f}, TM = {mode.tm_fraction:.3f}"
+    )
+
+
+def _mode_backend(mode: Mode) -> str:
+    backend = mode.backend.strip().lower()
+
+    if not backend:
+        raise ValueError("Mode.backend is empty; cannot select plot backend.")
+
+    return backend
+
+
+def _tidy3d_field_array(
+    mode: Mode,
+    field_component: Literal["Ex", "Ey"],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Return Tidy3D field array as ``(x_um, z_um, field[x, z])``."""
+
+    raw = mode.raw
+
+    if raw is None:
+        raise ValueError("Mode does not contain raw Tidy3D mode data.")
+
+    if not all(hasattr(raw, attribute) for attribute in ("data", "mode_index")):
+        raise TypeError(
+            "Expected raw Tidy3D mode data with 'data' and 'mode_index' "
+            "attributes."
+        )
+
+    frequency_index = getattr(raw, "frequency_index", 0)
+    data_array = raw.data.field_components[field_component].isel(
+        f=frequency_index,
+        mode_index=raw.mode_index,
+    )
+
+    if "z" in data_array.dims:
+        data_array = data_array.isel(z=0)
+
+    data_array = data_array.transpose("x", "y")
+
+    x_um = np.asarray(data_array.coords["x"].values, dtype=float)
+    z_um = np.asarray(data_array.coords["y"].values, dtype=float)
+    field = np.asarray(data_array.values, dtype=np.complex128)
+
+    if field.shape != (x_um.size, z_um.size):
+        raise ValueError(
+            "Unexpected Tidy3D field shape: expected "
+            f"({x_um.size}, {z_um.size}), got {field.shape}."
+        )
+
+    return x_um, z_um, field
+
+
+def _draw_tidy3d_cross_section_overlay(
+    mode: Mode,
+    ax,
+    *,
+    color: str = "0.15",
+    linewidth: float = 0.8,
+    alpha: float = 0.9,
+) -> None:
+    """Draw backend-neutral cross-section outlines on a Tidy3D field plot."""
+
+    raw = mode.raw
+    cross_section = getattr(raw, "cross_section", None)
+
+    if cross_section is None:
+        return
+
+    _draw_closed_outline(
+        cross_section.background_region().vertices(),
+        ax,
+        color=color,
+        linewidth=linewidth,
+        alpha=0.35 * alpha,
+    )
+
+    for structure in cross_section.structures:
+        vertices = _geometry_vertices(structure)
+        _draw_closed_outline(
+            vertices,
+            ax,
+            color=color,
+            linewidth=linewidth,
+            alpha=alpha,
+        )
+
+
+def _geometry_vertices(geometry) -> tuple[tuple[float, float], ...]:
+    vertices = geometry.vertices
+
+    if callable(vertices):
+        return vertices()
+
+    return vertices
+
+
+def _draw_closed_outline(
+    vertices: tuple[tuple[float, float], ...],
+    ax,
+    *,
+    color: str,
+    linewidth: float,
+    alpha: float,
+) -> None:
+    closed_vertices = (*vertices, vertices[0])
+    xs = [point[0] for point in closed_vertices]
+    zs = [point[1] for point in closed_vertices]
+
+    ax.plot(
+        xs,
+        zs,
+        color=color,
+        linewidth=linewidth,
+        alpha=alpha,
     )

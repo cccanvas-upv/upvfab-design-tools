@@ -8,7 +8,7 @@ from .results import Mode, ModeSolverResult
 
 
 FieldComponent = Literal["auto", "Ex", "Ey"]
-SUPPORTED_PROFILE_SAMPLING_BACKENDS = ("femwell",)
+SUPPORTED_PROFILE_SAMPLING_BACKENDS = ("femwell", "tidy3d")
 
 
 def sample_mode_profile(
@@ -38,6 +38,14 @@ def sample_mode_profile(
 
     if backend == "femwell":
         return _sample_femwell_mode_profile(
+            mode,
+            x_um=x_um,
+            z_um=z_um,
+            field_component=selected_component,
+        )
+
+    if backend == "tidy3d":
+        return _sample_tidy3d_mode_profile(
             mode,
             x_um=x_um,
             z_um=z_um,
@@ -74,6 +82,60 @@ def _sample_femwell_mode_profile(
 
     query_points = np.vstack([x_um, np.full(x_um.size, z_um)])
     return np.asarray(basis.probes(query_points) @ field, dtype=np.complex128)
+
+
+def _sample_tidy3d_mode_profile(
+    mode: Mode,
+    *,
+    x_um: np.ndarray,
+    z_um: float,
+    field_component: Literal["Ex", "Ey"],
+) -> np.ndarray:
+    """Sample one Tidy3D mode along a horizontal UPVfab x cut.
+
+    UPVfab's vertical coordinate is named ``z_um``. In the Tidy3D mode-solver
+    representation used by this package, that coordinate maps to Tidy3D ``y``.
+    """
+
+    raw = mode.raw
+
+    if raw is None:
+        raise ValueError("Mode does not contain raw Tidy3D mode data.")
+
+    if not all(hasattr(raw, attribute) for attribute in ("data", "mode_index")):
+        raise TypeError(
+            "Expected raw Tidy3D mode data with 'data' and 'mode_index' "
+            "attributes."
+        )
+
+    frequency_index = getattr(raw, "frequency_index", 0)
+    data_array = raw.data.field_components[field_component].isel(
+        f=frequency_index,
+        mode_index=raw.mode_index,
+    )
+
+    if "z" in data_array.dims:
+        data_array = data_array.isel(z=0)
+
+    sampled = data_array.interp(x=x_um, y=z_um)
+    values = np.asarray(sampled.values, dtype=np.complex128)
+
+    if values.shape != (x_um.size,):
+        values = np.ravel(values)
+
+    if values.shape != (x_um.size,):
+        raise ValueError(
+            "Unexpected Tidy3D sampled profile shape: "
+            f"expected ({x_um.size},), got {values.shape}."
+        )
+
+    if not np.all(np.isfinite(values)):
+        raise ValueError(
+            "Tidy3D field interpolation produced non-finite values. Check that "
+            "x_um and z_um lie inside the computed mode-solver plane."
+        )
+
+    return values
 
 
 def sample_mode_profiles(
