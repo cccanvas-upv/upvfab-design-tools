@@ -8,8 +8,12 @@ wheels/
 
 # Virtual environments
 .venv
+.env
 
 *.png
+*.hdf5
+*.hdf5.gz
+data/
 
 AGENTS.md
 
@@ -18,3 +22,4 @@ AGENTS.md
 .pytest_cache/
 .ruff_cache/
 .vscode/
+COUPLERS_PMM_EME_FDTD.ipynb
