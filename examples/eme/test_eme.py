@@ -4,11 +4,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from upvfab_design_tools.eme import (
     modal_excitation_coefficients,
+    modal_overlap_matrix,
     normalize_profiles,
     plot_propagation,
     propagate_modes,
+    shift_profile,
 )
 from upvfab_design_tools.modesolver.results import Mode, ModeSolverResult
+from upvfab_design_tools.modesolver import sample_mode_profile
 
 
 wavelength_um = 1.55
@@ -32,6 +35,25 @@ field_profiles = normalize_profiles(
     ),
     x_um,
 )
+
+shifted_profile = shift_profile(field_profiles[0], x_um, shift_um=0.4)
+shifted_centroid = np.trapezoid(
+    x_um * np.abs(shifted_profile) ** 2,
+    x_um,
+) / np.trapezoid(np.abs(shifted_profile) ** 2, x_um)
+assert shifted_centroid > 0.0
+same_basis_overlap = modal_overlap_matrix(field_profiles, field_profiles, x_um)
+assert np.allclose(same_basis_overlap, np.eye(2), atol=1e-3)
+try:
+    sample_mode_profile(
+        Mode(index=0, neff=2.0, wavelength_um=wavelength_um, backend="synthetic"),
+        x_um=x_um,
+        field_component="Ex",
+    )
+except NotImplementedError:
+    pass
+else:
+    raise AssertionError("Unsupported mode backends must fail explicitly.")
 
 input_profile = field_profiles[0] + 0.5j * field_profiles[1]
 initial_amplitudes = modal_excitation_coefficients(

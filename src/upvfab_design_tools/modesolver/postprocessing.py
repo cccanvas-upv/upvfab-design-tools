@@ -3,12 +3,12 @@ from __future__ import annotations
 from typing import Literal
 
 import numpy as np
-from skfem import ElementDG, ElementTriP1, ElementVector
 
 from .results import Mode, ModeSolverResult
 
 
 FieldComponent = Literal["auto", "Ex", "Ey"]
+SUPPORTED_PROFILE_SAMPLING_BACKENDS = ("femwell",)
 
 
 def sample_mode_profile(
@@ -18,21 +18,54 @@ def sample_mode_profile(
     z_um: float = 0.0,
     field_component: FieldComponent = "auto",
 ) -> np.ndarray:
-    """Sample one FEMWELL transverse mode along a horizontal x cut.
+    """Sample one mode field profile along a horizontal x cut.
 
     ``field_component="auto"`` selects Ex for a TE-dominant mode and Ey for
-    a TM-dominant mode.
+    a TM-dominant mode. The returned array is backend-independent and is the
+    scalar profile consumed by EME.
+
+    Backend-specific raw field interpretation is intentionally confined to this
+    module. Future mode-solver backends, such as Tidy3D, should add their
+    sampling adapter here without changing EME.
     """
 
     x_um = _validate_sample_positions(x_um)
     if not np.isfinite(z_um):
         raise ValueError("z_um must be finite.")
 
-    raw_mode = get_raw_mode(mode)
-    et_x, et_x_basis, et_y, et_y_basis = get_transverse_fields(raw_mode)
+    backend = _mode_backend(mode)
     selected_component = select_field_component(mode, field_component)
 
-    if selected_component == "Ex":
+    if backend == "femwell":
+        return _sample_femwell_mode_profile(
+            mode,
+            x_um=x_um,
+            z_um=z_um,
+            field_component=selected_component,
+        )
+
+    raise NotImplementedError(
+        "Field-profile sampling is not implemented for backend "
+        f"'{backend}'. Supported backends: "
+        f"{', '.join(SUPPORTED_PROFILE_SAMPLING_BACKENDS)}. "
+        "EME only requires sampled scalar profiles, so add the backend-specific "
+        "field extraction adapter in modesolver.postprocessing."
+    )
+
+
+def _sample_femwell_mode_profile(
+    mode: Mode,
+    *,
+    x_um: np.ndarray,
+    z_um: float,
+    field_component: Literal["Ex", "Ey"],
+) -> np.ndarray:
+    """Sample one FEMWELL transverse mode along a horizontal x cut."""
+
+    raw_mode = get_raw_mode(mode)
+    et_x, et_x_basis, et_y, et_y_basis = get_transverse_fields(raw_mode)
+
+    if field_component == "Ex":
         field = et_x
         basis = et_x_basis
     else:
@@ -55,10 +88,21 @@ def sample_mode_profiles(
     Automatic selection is accepted only when it resolves to the same field
     component for every mode. Coherent reconstruction cannot mix Ex and Ey as
     if they represented one scalar field.
+
+    This function is the intended generic bridge between mode-solver results
+    and EME: it converts backend-specific raw modes into a plain complex array
+    with shape ``(num_modes, len(x_um))``.
     """
 
     if len(result) == 0:
         raise ValueError("ModeSolverResult contains no modes to sample.")
+
+    mode_backends = {_mode_backend(mode) for mode in result.modes}
+    if len(mode_backends) != 1:
+        raise ValueError(
+            "All modes in a ModeSolverResult must use the same backend for "
+            f"profile sampling, got {sorted(mode_backends)}."
+        )
 
     selected_components = tuple(
         select_field_component(mode, field_component) for mode in result.modes
@@ -85,21 +129,35 @@ def sample_mode_profiles(
 
 
 def get_raw_mode(mode: Mode):
-    """Return the FEMWELL object wrapped by a generic mode."""
+    """Return the raw backend object wrapped by a generic FEMWELL mode."""
 
-    if mode.backend and mode.backend != "femwell":
+    backend = _mode_backend(mode)
+    if backend != "femwell":
         raise NotImplementedError(
-            f"Field sampling is not implemented for backend '{mode.backend}'."
+            f"FEMWELL raw-mode extraction cannot handle backend '{backend}'."
         )
 
     if mode.raw is None:
-        raise ValueError("Mode does not contain a raw backend mode.")
+        raise ValueError("Mode does not contain a raw FEMWELL backend mode.")
 
     return mode.raw
 
 
 def get_transverse_fields(raw_mode):
     """Extract FEMWELL Ex and Ey fields and their plotting bases."""
+
+    try:
+        from skfem import ElementDG, ElementTriP1, ElementVector
+    except ImportError as exc:
+        raise ImportError(
+            "Sampling FEMWELL mode fields requires scikit-fem. Install the "
+            "modesolver optional dependencies before sampling FEMWELL modes."
+        ) from exc
+
+    if not hasattr(raw_mode, "basis") or not hasattr(raw_mode, "E"):
+        raise TypeError(
+            "Expected a FEMWELL raw mode with 'basis' and 'E' attributes."
+        )
 
     (et, et_basis), _ = raw_mode.basis.split(raw_mode.E)
     plot_basis = et_basis.with_element(
@@ -141,6 +199,18 @@ def select_field_component(
         "Automatic field-component selection is ambiguous because the TE and "
         "TM fractions are equal. Set field_component explicitly to 'Ex' or 'Ey'."
     )
+
+
+def _mode_backend(mode: Mode) -> str:
+    backend = mode.backend.strip().lower()
+
+    if not backend:
+        raise ValueError(
+            "Mode.backend is empty. Field-profile sampling requires modes "
+            "created by a backend-aware mode solver."
+        )
+
+    return backend
 
 
 def _validate_sample_positions(x_um: np.ndarray) -> np.ndarray:

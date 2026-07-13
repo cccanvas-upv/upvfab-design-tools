@@ -1,6 +1,11 @@
 from .base import BaseModeSolver
 from .femwell_solver import FemwellModeSolver
-from .postprocessing import sample_mode_profile, sample_mode_profiles
+from .postprocessing import (
+    SUPPORTED_PROFILE_SAMPLING_BACKENDS,
+    FieldComponent,
+    sample_mode_profile,
+    sample_mode_profiles,
+)
 from .results import Mode, ModeSolverResult
 from .visualization import (
     plot_effective_indices,
@@ -14,8 +19,10 @@ from .visualization import (
 __all__ = [
     "BaseModeSolver",
     "FemwellModeSolver",
+    "FieldComponent",
     "Mode",
     "ModeSolverResult",
+    "SUPPORTED_PROFILE_SAMPLING_BACKENDS",
     "sample_mode_profile",
     "sample_mode_profiles",
     "plot_mode",

@@ -1,22 +1,21 @@
-import upvfab_design_tools as udt 
+import matplotlib
+
+matplotlib.use("QtAgg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon as MplPolygon
+
+import upvfab_design_tools as udt
+from upvfab_design_tools.core import get_material
+from upvfab_design_tools.core.geometry import Rectangle, Trapezoid, Polygon
+from upvfab_design_tools.core.materials import SILICON_NITRIDE
 
 print(udt.__version__)
-
-from upvfab_design_tools.core import get_material
 
 core_material = get_material("sin")
 cladding_material = get_material("thermal_sio2")
 
 print(core_material.n(1.55))
 print(cladding_material.n(1.55))
-
-import matplotlib
-matplotlib.use("QtAgg")
-import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon as MplPolygon
-
-from upvfab_design_tools.core.materials import SILICON_NITRIDE
-from upvfab_design_tools.core.geometry import Rectangle, Trapezoid, Polygon
 
 
 def get_vertices(geometry):

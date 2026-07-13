@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon as MplPolygon
 
 from upvfab_design_tools.core.cross_section import CrossSection
-from upvfab_design_tools.core.geometry import Rectangle, Polygon, Trapezoid
+from upvfab_design_tools.core.geometry import Rectangle, Trapezoid
 from upvfab_design_tools.core.materials import (
     AIR,
     BCB,

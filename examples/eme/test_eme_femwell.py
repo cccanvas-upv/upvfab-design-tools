@@ -12,6 +12,7 @@ from upvfab_design_tools.eme import (
     normalize_profiles,
     plot_propagation,
     propagate_modes,
+    shift_profile,
 )
 from upvfab_design_tools.modesolver import (
     FemwellModeSolver,
@@ -98,7 +99,8 @@ propagation_mode_result = ModeSolverResult(
 )
 
 x_um = np.linspace(-6.9, 6.9, 1024)
-INPUT_X_POSITION_UM = 2.0
+
+INPUT_X_POSITION_UM = 0.0
 
 centered_input_profile = sample_mode_profile(
     input_mode,
@@ -106,12 +108,10 @@ centered_input_profile = sample_mode_profile(
     z_um=FIELD_CUT_Z_UM,
     field_component="Ex",
 )
-input_profile = np.interp(
-    x_um - INPUT_X_POSITION_UM,
-    x_um,
+input_profile = shift_profile(
     centered_input_profile,
-    left=0.0,
-    right=0.0,
+    x_um,
+    shift_um=INPUT_X_POSITION_UM,
 )
 propagation_profiles = sample_mode_profiles(
     propagation_mode_result,
@@ -152,6 +152,13 @@ ax.axhline(
     linewidth=0.8,
     alpha=0.7,
 )
+ax.axhline(
+    INPUT_X_POSITION_UM,
+    color="cyan",
+    linestyle="--",
+    linewidth=0.8,
+    alpha=0.8,
+)
 
 # output_filename = "eme_strip_1um_to_10um.png"
 # fig.savefig(output_filename, dpi=300, bbox_inches="tight")
@@ -159,6 +166,7 @@ plt.show()
 
 coupled_power = float(np.sum(np.abs(initial_amplitudes) ** 2))
 print(f"Input TE mode: n_eff = {input_mode.neff.real:.6f}")
+print(f"Input x position: {INPUT_X_POSITION_UM:.3f} um")
 print(f"Propagation TE modes used: {len(propagation_mode_result)}")
 print(f"Scalar power represented by these modes: {coupled_power:.6f}")
 # print(f"Saved propagation plot to {output_filename}")

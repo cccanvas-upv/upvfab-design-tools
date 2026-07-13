@@ -1,4 +1,5 @@
-from upvfab_design_tools.core.cross_section import CrossSection
+import matplotlib.pyplot as plt
+
 from upvfab_design_tools.core.geometry import Rectangle, Trapezoid
 from upvfab_design_tools.core.materials import (
     AIR,
@@ -7,8 +8,7 @@ from upvfab_design_tools.core.materials import (
     THERMAL_SILICON_DIOXIDE,
 )
 from upvfab_design_tools.modesolver import FemwellModeSolver
-from upvfab_design_tools.modesolver import plot_effective_indices,plot_modes_grid,plot_mode_ex_ey, save_figure
-import matplotlib.pyplot as plt
+from upvfab_design_tools.modesolver import plot_modes_grid
 from upvfab_design_tools.core.visualization import (
     plot_cross_section,
     save_figure,
@@ -138,7 +138,7 @@ fig, axs = plot_modes_grid(
 
 try:
     plt.show()
-except:
+except Exception:
     save_figure(fig, "modes_ex.png")
     # save_figure(fig_neff, "effective_indices.png")
     pass
