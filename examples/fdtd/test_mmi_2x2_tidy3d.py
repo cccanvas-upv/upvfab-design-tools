@@ -23,8 +23,8 @@ from upvfab_design_tools.tidy3d_plugin import (
 )
 
 ESTIMATE_TIDY3D_COST = False
-LOAD_TIDY3D_DATA = True
-RUN_TIDY3D_CLOUD = False
+LOAD_TIDY3D_DATA = False
+RUN_TIDY3D_CLOUD = True
 TIDY3D_DATA_PATH = "data/upvfab_mmi_2x2_fdtd.hdf5"
 
 WAVELENGTH_UM = 1.55
@@ -32,7 +32,7 @@ MMI_LENGTH_UM = 105
 IO_LENGTH_UM = 10.0
 ACCESS_WIDTH_UM = 1.0
 TAPER_WIDTH_UM = 2.0
-MMI_WIDTH_UM = 12.0
+MMI_WIDTH_UM = 10.0
 IO_Y_POSITION_UM = 2.0
 INPUT_PORT = "bottom"
 MODE_PLANE_Y_SPAN_UM = 2.5 * ACCESS_WIDTH_UM
@@ -194,7 +194,7 @@ if sim_data is not None:
         field_part="mag",
         polygons=polygons,
     )
-    ax_field.set_title("FDTD Re(Ey), propagation left to right")
+    ax_field.set_title("FDTD Re(Ey)")
 
     try:
         plt.show()

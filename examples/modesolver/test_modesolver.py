@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-
+from upvfab_design_tools.core.cross_section import CrossSection
 from upvfab_design_tools.core.geometry import Rectangle, Trapezoid
 from upvfab_design_tools.core.materials import (
     AIR,
@@ -54,19 +54,19 @@ sin_core = Trapezoid.from_sidewall_angle(
     name="Core",
 )
 
-# xs = CrossSection(
-#     name="sin_cross_section",
-#     background_material=THERMAL_SILICON_DIOXIDE,
-#     x_min=-0.5*window_width,
-#     x_max=0.5*window_width,
-#     z_min=-bottom_margin,
-#     z_max=wvgd_thickness + top_margin,
-#     structures=(
-#         # bcb_region,
-#         # air_region,
-#         sin_core,
-#     ),
-# )
+xs = CrossSection(
+    name="sin_cross_section",
+    background_material=THERMAL_SILICON_DIOXIDE,
+    x_min=-0.5*window_width,
+    x_max=0.5*window_width,
+    z_min=-bottom_margin,
+    z_max=wvgd_thickness + top_margin,
+    structures=(
+        # bcb_region,
+        # air_region,
+        sin_core,
+    ),
+)
 
 # xs = CrossSection(
 #     name="complex_sin_cross_section",
@@ -82,23 +82,23 @@ sin_core = Trapezoid.from_sidewall_angle(
 #     ),
 # )
 
-xs = strip_waveguide(
-    width = wvgd_width,
-    height=  wvgd_thickness,
-    core_material = SILICON_NITRIDE,
-    background_material = THERMAL_SILICON_DIOXIDE,
-    x_center = 0.0,
-    z_min = 0.0,
-    sidewall_angle_deg = 0.0,
-    width_reference = "bottom",
-    x_span = window_width,
-    bottom_margin = bottom_margin,
-    top_margin = top_margin,
-    surrounding_regions = (
-        bcb_region,
-        air_region,
-    ),
-)
+# xs = strip_waveguide(
+#     width = wvgd_width,
+#     height=  wvgd_thickness,
+#     core_material = SILICON_NITRIDE,
+#     background_material = THERMAL_SILICON_DIOXIDE,
+#     x_center = 0.0,
+#     z_min = 0.0,
+#     sidewall_angle_deg = 0.0,
+#     width_reference = "bottom",
+#     x_span = window_width,
+#     bottom_margin = bottom_margin,
+#     top_margin = top_margin,
+#     surrounding_regions = (
+#         bcb_region,
+#         air_region,
+#     ),
+# )
 
 fig, ax = plot_cross_section(
     xs,
