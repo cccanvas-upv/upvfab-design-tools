@@ -1,0 +1,2 @@
+wavelength [nm]	 index	 neff				 polarization	 te_fraction	 tm_fraction
+1550.0000		 0		 1.541956+0.000000j	 TE				 0.9962			 0.0038

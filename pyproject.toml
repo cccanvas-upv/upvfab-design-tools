@@ -17,6 +17,10 @@ dependencies = [
     "scipy",
     "matplotlib",
     "pyyaml",
+    "femwell",
+    "shapely",
+    "pandas",
+    "openpyxl",
 ]
 
 [project.optional-dependencies]

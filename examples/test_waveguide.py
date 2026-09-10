@@ -128,7 +128,7 @@ air_region = Rectangle(
     name="Air",
 )
 
-sin_core = Trapezoid.from_sidewall_angle(
+'''sin_core = Trapezoid.from_sidewall_angle(
     x_center=0.0,
     z_min=0.0,
     height=0.3,
@@ -137,6 +137,15 @@ sin_core = Trapezoid.from_sidewall_angle(
     sidewall_angle_deg=6.0,
     material=SILICON_NITRIDE,
     name="rib ridge",
+)'''
+
+sin_core = Rectangle(
+    x_min=-0.5,
+    x_max=0.5,
+    z_min=0.0,
+    z_max=0.3,
+    material=SILICON_NITRIDE,
+    name="core",
 )
 
 xs = CrossSection(

@@ -71,14 +71,14 @@ class Material:
 
 SILICON_NITRIDE = Material(
     name="Silicon Nitride",
-    index_model=1.996,
+    index_model=1.96106,
     aliases=("SiN", "Si3N4", "silicon_nitride"),
     description="Silicon nitride.",
 )
 
 THERMAL_SILICON_DIOXIDE = Material(
     name="Thermal Silicon Dioxide",
-    index_model=1.444,
+    index_model=1.4581, #1.444
     aliases=("SiO2 thermal", "thermal_sio2", "thermal oxide"),
     description="Thermal silicon dioxide.",
 )
@@ -99,7 +99,7 @@ SILICON = Material(
 
 BCB = Material(
     name="Benzocyclobutene",
-    index_model=1.550,
+    index_model=1.57442,
     aliases=("BCB", "benzocyclobutene"),
     description="Benzocyclobutene polymer.",
 )
