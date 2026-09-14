@@ -109,13 +109,13 @@ fig, ax = plot_cross_section(
 plt.show()
 
 solver = FemwellModeSolver(
-    default_resolution=0.3,
-    min_resolution=0.01,
-    resolution_factor=10.0,
-    filter_guided=True,
-    reference_material=THERMAL_SILICON_DIOXIDE,
-    guided_tolerance=1e-2,
-    enable_plots=False,
+    default_resolution = 0.3, 
+    min_resolution = 0.01, 
+    resolution_factor = 10.0,
+    filter_guided = True, 
+    reference_material = THERMAL_SILICON_DIOXIDE, 
+    guided_tolerance = 1e-2, 
+    enable_plots = False, 
 )
 
 result = solver.solve(
