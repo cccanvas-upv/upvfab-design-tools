@@ -1,0 +1,101 @@
+
+import numpy as np 
+import matplotlib.pyplot as plt
+from upvfab_design_tools.eme import (
+    modal_excitation_coefficients, 
+    modal_overlap_matrix,
+    normalize_profiles, 
+    plot_propagation, 
+    propagate_modes,
+    shift_profile,
+)
+
+from upvfab_design_tools.modesolver.results import Mode, ModeSolverResult
+from upvfab_design_tools.modesolver import sample_mode_profile
+
+wavelength_um = 1.55
+modes = ( ## pareix que has de pasar-li el index del mode que hages simulat, no que l'agafe dels resultats
+    Mode(index=0, neff=2.0, wavelength_um=wavelength_um),
+    Mode(index=1, neff=1.8, wavelength_um=wavelength_um),
+)
+
+mode_result = ModeSolverResult(
+    modes = modes, 
+    wavelength_um=wavelength_um, 
+    backend = "synthetic",
+)
+
+x_um = np.linspace(-3.0, 3.0, 401)
+field_profiles = normalize_profiles(
+    np.array(
+        [
+            np.exp(-(x_um / 0.8)**2),
+            (x_um / 0.8) * np.exp(-(x_um / 0.8) **2),
+        ]
+    ),
+    x_um,
+)
+
+shifted_profile = shift_profile(field_profiles[0], x_um, shift_um = 0.4)
+shifted_centroid = np.trapezoid(
+    x_um * np.abs(shifted_profile) **2, 
+    x_um,
+) / np.trapezoid(np.abs(shifted_profile)**2, x_um)
+
+assert shifted_centroid > 0.0
+same_basis_overlap = modal_overlap_matrix(field_profiles, field_profiles, x_um)
+assert np.allclose(same_basis_overlap, np.eye(2), atol=1e-3)
+try:
+    sample_mode_profile(
+        Mode(index=0, neff=2.0, wavelength_um=wavelength_um, backend="synthetic"),
+        x_um=x_um, 
+        field_component="Ex",
+    )
+except NotImplementedError:
+    pass
+else:
+    raise AssertionError("Unsupported mode backends must fail explicitly")
+
+input_profile = field_profiles[0] + 0.5j * field_profiles[1]
+initial_amplitudes = modal_excitation_coefficients(
+    input_profile,
+    field_profiles,
+    x_um
+)
+
+propagation = propagate_modes(
+    mode_result,
+    initial_amplitudes=initial_amplitudes,
+    length_um = 10.0,
+    dz_um = 0.3,
+)
+
+expected_final = initial_amplitudes * np.exp (
+    -1j * np.array([mode.beta for mode in modes]) * propagation.z_um[-1]
+)
+
+assert propagation.z_um[-1] == 10.0
+assert np.allclose(propagation.modal_amplitudes[0], initial_amplitudes)
+assert np.allclose(propagation.final_amplitudes, expected_final)
+assert np.allclose(
+    propagation.total_modal_power, 
+    np.sum(np.abs(initial_amplitudes) ** 2), 
+)
+assert np.allclose(np.sum(np.abs(initial_amplitudes)**2), 1.0)
+field = propagation.reconstruct_field(field_profiles)
+
+assert field.shape == (propagation.z_um.size, x_um.size)
+
+fig, ax = plot_propagation(
+    propagation, 
+    x_um=x_um,
+    field_profiles=field_profiles,
+    aspect= "auto",
+)
+
+plt.show()
+
+print("Uniform EME propagation check passed. ")
+print("Final modal amplitudes: ", propagation.final_amplitudes)
+print("Propagation plot generated.")
+
