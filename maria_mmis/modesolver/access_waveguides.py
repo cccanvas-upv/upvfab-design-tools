@@ -49,6 +49,8 @@ SIDEWALL_ANGLE_DEG = NOMINAL_SIDEWALL_ANGLE_DEG + SIDEWALL_ANGLE_DEV_DEG
 #parámetros simulación
 NUM_MODES = 4
 DOMAIN_X_SPAN_UM = 6.0
+BOTTOM_MARGIN_UM = 1.5
+TOP_MARGIN_UM = 1.5
 FIELD_CUT_Z_UM = 0.5 * CORE_HEIGHT_UM
 
 SOLVER = 0 #0 = femwell, 1 = tidy
@@ -77,13 +79,13 @@ N_HEIGHT = 21
 #gráficas: para elegir las que queremos en cada momento
 
 PLOTS = {
-    "cross_section": False,
+    "cross_section": True,
     "modes": False,
     "neff_lambda": False,
     "ng_lambda": False,
     "neff_width": False,
     "neff_sidewall_angle": False,
-    "neff_height": True,
+    "neff_height": False,
 }
 
 # cross-section
@@ -103,8 +105,8 @@ def make_xs(
         x_center=0.0,
         z_min=0.0,
         x_span=DOMAIN_X_SPAN_UM,
-        bottom_margin=1.5,
-        top_margin=1.5,
+        bottom_margin=BOTTOM_MARGIN_UM,
+        top_margin=TOP_MARGIN_UM,
         name="-",
     )
 
