@@ -19,7 +19,7 @@ from upvfab_design_tools.modesolver import (
 
 LAMBDA_0_UM = 1.55
 
-NOMINAL_MMI_WIDTH_UM = 12.0
+NOMINAL_MMI_WIDTH_UM = 6.0
 MMI_WIDTH_DEV_UM = 0.0
 MMI_WIDTH_UM = NOMINAL_MMI_WIDTH_UM + MMI_WIDTH_DEV_UM
 
@@ -40,15 +40,42 @@ BOTTOM_MARGIN_UM = 1.5
 TOP_MARGIN_UM = 1.5
 
 #solver 
-SOLVER_TYPE = 1 # 0 = femwell, 1 = tidy
-NUM_MODES = 20 # provisional, revisar convergencia
+SOLVER_TYPE = 0 # 0 = femwell, 1 = tidy
+NUM_MODES = 5 # provisional, revisar convergencia
 MAX_MODES_PLOT = 6
+
+# barrido width:
+
+MMI_WIDTH_MIN_UM = 4
+MMI_WIDTH_MAX_UM = 6
+N_MMI_WIDTH = 2
+
+    ### Wmin = 2*Wport + gap + 2*margen
+W_PORT_UM = 1.5
+MIN_GAP_UM = 1.0
+EDGE_MARGIN_UM = 1.0
+W_MMI_MIN_PRACTICAL_UM = (2 * W_PORT_UM + MIN_GAP_UM + 2 * EDGE_MARGIN_UM)
+
+
+# barrido sidewall angle
+SIDEWALL_ANGLE_MIN_DEG = 20.0
+SIDEWALL_ANGLE_MAX_DEG = 30.0
+N_SIDEWALL_ANGLE = 5
+
+    #estudio de sensibilidad a swangle vs ancho
+MMI_WIDTHS_SIDEWALL_UM = [3.0, 6.0, 8.0]
+
 
 #gráficas: para elegir las que queremos en cada momento
 
 PLOTS = {
-    "cross_section": True,
+    "cross_section": False,
+    "l_pi_result": False,
     "te_modes": False,
+    "lpi_width": False,
+    "lpi_sidewall_angle": False,
+    "lpi_sidewall_angle_percent": False,
+    "lpi_sidewall_width_comparison": True,
 }
 
 # cross-section
@@ -156,18 +183,19 @@ result = SOLVER.solve(
 result_te = te_mode_result(result)
 L_PI_UM = lpi_from_first_two_modes(result_te)
 
-print(f"\nSolver: {SOLVER_NAME}")
-print(f"MMI width: {MMI_WIDTH_UM:.3f} µm")
-print(f"Wavelength: {LAMBDA_0_UM:.3f} µm")
-print(f"Guided modes: {len(result.modes)}")
-print(f"TE-like modes: {len(result_te.modes)}")
-for mode in result_te.modes[:2]:
-    print(
-        f"TE mode {mode.index}: "
-        f"neff = {np.real(mode.neff):.6f}, "
-        f"beta = {np.real(mode.beta):.6f}"
-    )
-print(f"Lpi (TE): {L_PI_UM:.3f} µm")
+if PLOTS["l_pi_result"]:
+    print(f"\nSolver: {SOLVER_NAME}")
+    print(f"MMI width: {MMI_WIDTH_UM:.3f} µm")
+    print(f"Wavelength: {LAMBDA_0_UM:.3f} µm")
+    print(f"Guided modes: {len(result.modes)}")
+    print(f"TE-like modes: {len(result_te.modes)}")
+    for mode in result_te.modes[:2]:
+        print(
+            f"TE mode {mode.index}: "
+            f"neff = {np.real(mode.neff):.6f}, "
+            f"beta = {np.real(mode.beta):.6f}"
+        )
+    print(f"Lpi (TE): {L_PI_UM:.3f} µm")
 
 if PLOTS["te_modes"]:
 
@@ -183,5 +211,207 @@ if PLOTS["te_modes"]:
     fig.suptitle(
         f"TE modes - MMI W = {MMI_WIDTH_UM:.1f} µm - {SOLVER_NAME}"
     )
+
+
+# l_pi vs width
+if PLOTS["lpi_width"]:
+
+    mmi_widths = np.linspace(
+        MMI_WIDTH_MIN_UM,
+        MMI_WIDTH_MAX_UM,
+        N_MMI_WIDTH,
+    )
+
+    lpi_width = []
+
+    for width in mmi_widths:
+
+        result_width = SOLVER.solve(
+            make_mmi_xs(width=width),
+            wavelength_um=LAMBDA_0_UM,
+            num_modes=NUM_MODES,
+        )
+
+        result_width_te = te_mode_result(result_width)
+
+        lpi_width.append(
+            lpi_from_first_two_modes(result_width_te)
+        )
+
+    lpi_width = np.array(lpi_width)
+
+    plt.figure()
+
+    plt.plot(
+        mmi_widths,
+        lpi_width,
+        "o-",
+        label="$L_\\pi$",
+    )
+
+    plt.axvline(
+        NOMINAL_MMI_WIDTH_UM,
+        linestyle="--",
+        label=f"Nominal = {NOMINAL_MMI_WIDTH_UM:.1f} µm",
+    )
+
+    plt.axvline(
+    W_MMI_MIN_PRACTICAL_UM,
+    linestyle="--",
+    label=f"Practical $W_{{min}}$ = {W_MMI_MIN_PRACTICAL_UM:.1f} µm",
+    )
+
+
+    plt.xlabel("MMI width (µm)")
+    plt.ylabel("$L_\\pi$ (µm)")
+    plt.title(
+        f"$L_\\pi$ vs MMI width at λ = "
+        f"{LAMBDA_0_UM:.3f} µm - {SOLVER_NAME}"
+    )
+
+    plt.legend()
+    plt.grid()
+    plt.tight_layout()
+
+    print(f"Practical minimum MMI width: {W_MMI_MIN_PRACTICAL_UM:.2f} µm")
+
+# l_pi vs sidewall_angle
+
+if PLOTS["lpi_sidewall_angle"] or PLOTS["lpi_sidewall_angle_percent"]:
+
+    sidewall_angles = np.unique(np.append(np.linspace(SIDEWALL_ANGLE_MIN_DEG, SIDEWALL_ANGLE_MAX_DEG, N_SIDEWALL_ANGLE),SIDEWALL_ANGLE_DEG))
+
+    lpi_sidewall = []
+
+    for angle in sidewall_angles:
+
+        result_angle = SOLVER.solve(
+            make_mmi_xs(sidewall_angle=angle),
+            wavelength_um=LAMBDA_0_UM,
+            num_modes=NUM_MODES,
+        )
+
+        result_angle_te = te_mode_result(result_angle)
+        lpi_sidewall.append(lpi_from_first_two_modes(result_angle_te))
+
+    lpi_sidewall = np.array(lpi_sidewall)
+
+    nominal_angle_index = np.argmin(np.abs(sidewall_angles - SIDEWALL_ANGLE_DEG))
+    lpi_nominal = lpi_sidewall[nominal_angle_index]
+
+    if PLOTS["lpi_sidewall_angle"]:
+
+        plt.figure()
+        plt.plot(
+            sidewall_angles,
+            lpi_sidewall,
+            "o-",
+        )
+        plt.axvline(
+            SIDEWALL_ANGLE_DEG,
+            linestyle="--",
+            label=f"Nominal = {SIDEWALL_ANGLE_DEG:.1f}°",
+        )
+        plt.xlabel("Sidewall angle (deg)")
+        plt.ylabel("$L_\\pi$ (µm)")
+        plt.title(
+            f"$L_\\pi$ vs sidewall angle - "
+            f"W = {MMI_WIDTH_UM:.1f} µm - {SOLVER_NAME}"
+        )
+        plt.legend()
+        plt.grid()
+        plt.tight_layout()
+
+    lpi_sidewall_percent = (100* (lpi_sidewall - lpi_nominal)/ lpi_nominal)
+
+    if PLOTS["lpi_sidewall_angle_percent"]:
+
+        plt.figure()
+
+        plt.plot(
+            sidewall_angles,
+            lpi_sidewall_percent,
+            "o-",
+        )
+
+        plt.axvline(
+            SIDEWALL_ANGLE_DEG,
+            linestyle="--",
+            label=f"Nominal = {SIDEWALL_ANGLE_DEG:.1f}°",
+        )
+
+        plt.axhline(0,linestyle="--")
+
+        plt.xlabel("Sidewall angle (deg)")
+        plt.ylabel("$\\Delta L_\\pi$ (%)")
+        plt.title(
+            f"Relative $L_\\pi$ variation vs sidewall angle - "
+            f"W = {MMI_WIDTH_UM:.1f} µm - {SOLVER_NAME}"
+        )
+        plt.legend()
+        plt.grid()
+        plt.tight_layout()
+        print("\nLpi vs sidewall angle:")
+
+    for angle, lpi, percent in zip(
+        sidewall_angles,
+        lpi_sidewall,
+        lpi_sidewall_percent,
+    ):
+        print(
+            f"Angle = {angle:.1f}° -> "
+            f"Lpi = {lpi:.2f} µm, "
+            f"ΔLpi = {percent:+.2f}%"
+        )
+
+# sensibilidad l_pi vs ancho
+
+if PLOTS["lpi_sidewall_width_comparison"]:
+
+    sidewall_angles = np.unique(np.append(np.linspace(SIDEWALL_ANGLE_MIN_DEG, SIDEWALL_ANGLE_MAX_DEG, N_SIDEWALL_ANGLE),SIDEWALL_ANGLE_DEG))
+    plt.figure()
+    for width in MMI_WIDTHS_SIDEWALL_UM:
+
+        lpi_values = []
+
+        for angle in sidewall_angles:
+
+            result = SOLVER.solve(
+                make_mmi_xs(
+                    width=width,
+                    sidewall_angle=angle,
+                ),
+                wavelength_um=LAMBDA_0_UM,
+                num_modes=NUM_MODES,
+            )
+
+            result_te = te_mode_result(result)
+
+            lpi_values.append(lpi_from_first_two_modes(result_te))
+
+        lpi_values = np.array(lpi_values)
+        nominal_angle_index = np.argmin(np.abs(sidewall_angles - SIDEWALL_ANGLE_DEG))
+
+        lpi_nominal = lpi_values[nominal_angle_index]
+        lpi_percent = (100* (lpi_values - lpi_nominal)/ lpi_nominal)
+
+        plt.plot(
+            sidewall_angles,
+            lpi_percent,
+            "o-",
+            label=f"W = {width:.1f} µm",
+        )
+    plt.axvline(SIDEWALL_ANGLE_DEG, linestyle="--", label=f"Nominal angle = {SIDEWALL_ANGLE_DEG:.1f}°")
+    plt.axhline(0, linestyle="--")
+    plt.xlabel("Sidewall angle (deg)")
+    plt.ylabel("$\\Delta L_\\pi / L_{\\pi,0}$ (%)")
+    plt.title(
+        f"Relative $L_\\pi$ variation vs sidewall angle "
+        f"- {SOLVER_NAME}"
+    )
+    plt.legend()
+    plt.grid()
+    plt.tight_layout()
+
 
 plt.show()
