@@ -7,6 +7,25 @@ from upvfab_design_tools.core.geometry import GeometryPrimitive, Polygon
 from upvfab_design_tools.core.materials import Material
 
 
+# def material_to_tidy3d_medium(
+#     material: Material,
+#     *,
+#     wavelength_um: float,
+# ):
+#     """Convert a backend-neutral material into a Tidy3D medium."""
+
+#     td = _import_tidy3d()
+#     epsilon = material.epsilon(wavelength_um)
+#     epsilon = _real_epsilon_for_tidy3d(epsilon, material.name)
+
+#     return td.Medium(permittivity=epsilon, name=material.name)
+
+TIDY3D_MATERIAL_BACKEND = "tidy3d"
+# Opciones:
+# "upvfab" -> usa n=1.996 para SiN y n=1.444 para SiO2
+# "tidy3d" -> usa la material_library nativa de Tidy3D
+
+
 def material_to_tidy3d_medium(
     material: Material,
     *,
@@ -15,10 +34,59 @@ def material_to_tidy3d_medium(
     """Convert a backend-neutral material into a Tidy3D medium."""
 
     td = _import_tidy3d()
-    epsilon = material.epsilon(wavelength_um)
-    epsilon = _real_epsilon_for_tidy3d(epsilon, material.name)
 
-    return td.Medium(permittivity=epsilon, name=material.name)
+    # ========================================================
+    # TIDY3D NATIVE MATERIAL LIBRARY
+    # ========================================================
+
+    if TIDY3D_MATERIAL_BACKEND == "tidy3d":
+
+        material_name = material.name.lower()
+
+        # Silicon nitride
+        if (
+            "silicon nitride" in material_name
+            or material_name == "sin"
+            or material_name == "si3n4"
+        ):
+            return td.material_library[
+                "Si3N4"
+            ]["Luke2015Sellmeier"]
+
+        # Thermal silicon dioxide
+        if (
+            "silicon dioxide" in material_name
+            or "sio2" in material_name
+            or "oxide" in material_name
+        ):
+            return td.material_library[
+                "SiO2"
+            ]["Palik_Lossless"]
+
+    # ========================================================
+    # ORIGINAL UPVFAB MATERIAL MODEL
+    # ========================================================
+
+    if TIDY3D_MATERIAL_BACKEND == "upvfab":
+
+        epsilon = material.epsilon(
+            wavelength_um
+        )
+
+        epsilon = _real_epsilon_for_tidy3d(
+            epsilon,
+            material.name,
+        )
+
+        return td.Medium(
+            permittivity=epsilon,
+            name=material.name,
+        )
+
+    raise ValueError(
+        "TIDY3D_MATERIAL_BACKEND must be "
+        "'upvfab' or 'tidy3d'."
+    )
 
 
 def geometry_to_tidy3d_structure(
