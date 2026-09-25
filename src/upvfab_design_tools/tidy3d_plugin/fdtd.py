@@ -39,6 +39,82 @@ class FDTDLayer:
         return 0.5 * (self.z_min + self.z_max)
 
 
+# def mmi_2x2_vertices(
+#     *,
+#     length_um: float,
+#     io_length_um: float,
+#     io_y_position_um: float,
+#     access_width_um: float,
+#     taper_width_um: float,
+#     mmi_width_input_um: float,
+#     mmi_width_center_um: float | None = None,
+# ) -> dict[str, tuple[tuple[float, float], ...]]:
+#     """Return 2D MMI polygons in the FDTD propagation-lateral plane.
+
+#     Coordinates are ``(x, y)`` where ``x`` is the propagation direction and
+#     ``y`` is the lateral coordinate. This mirrors the exploratory Annex 3
+#     notebook geometry while keeping the vertices available as reusable data.
+#     """
+
+#     _validate_positive("length_um", length_um)
+#     _validate_positive("io_length_um", io_length_um)
+#     _validate_positive("access_width_um", access_width_um)
+#     _validate_positive("taper_width_um", taper_width_um)
+#     _validate_positive("mmi_width_input_um", mmi_width_input_um)
+
+#     if io_y_position_um <= 0:
+#         raise ValueError("io_y_position_um must be positive.")
+
+#     if mmi_width_center_um is None:
+#         mmi_width_center_um = mmi_width_input_um
+
+#     _validate_positive("mmi_width_center_um", mmi_width_center_um)
+
+#     x0 = -0.5 * length_um
+#     x1 = 0.5 * length_um
+#     x_left = x0 - io_length_um
+#     x_right = x1 + io_length_um
+#     y = io_y_position_um
+#     w_wg = access_width_um
+#     w_taper = taper_width_um
+#     w0 = mmi_width_input_um
+#     w1 = mmi_width_center_um
+
+#     return {
+#         "mmi": (
+#             (x0, -0.5 * w0),
+#             (0.0, -0.5 * w1),
+#             (x1, -0.5 * w0),
+#             (x1, 0.5 * w0),
+#             (0.0, 0.5 * w1),
+#             (x0, 0.5 * w0),
+#         ),
+#         "in_top": (
+#             (x_left, y - 0.5 * w_wg),
+#             (x0, y - 0.5 * w_taper),
+#             (x0, y + 0.5 * w_taper),
+#             (x_left, y + 0.5 * w_wg),
+#         ),
+#         "in_bottom": (
+#             (x_left, -y - 0.5 * w_wg),
+#             (x0, -y - 0.5 * w_taper),
+#             (x0, -y + 0.5 * w_taper),
+#             (x_left, -y + 0.5 * w_wg),
+#         ),
+#         "out_top": (
+#             (x1, y - 0.5 * w_taper),
+#             (x_right, y - 0.5 * w_wg),
+#             (x_right, y + 0.5 * w_wg),
+#             (x1, y + 0.5 * w_taper),
+#         ),
+#         "out_bottom": (
+#             (x1, -y - 0.5 * w_taper),
+#             (x_right, -y - 0.5 * w_wg),
+#             (x_right, -y + 0.5 * w_wg),
+#             (x1, -y + 0.5 * w_taper),
+#         ),
+#     }
+
 def mmi_2x2_vertices(
     *,
     length_um: float,
@@ -48,12 +124,20 @@ def mmi_2x2_vertices(
     taper_width_um: float,
     mmi_width_input_um: float,
     mmi_width_center_um: float | None = None,
+    straight_io_length_um: float = 0.0,
 ) -> dict[str, tuple[tuple[float, float], ...]]:
     """Return 2D MMI polygons in the FDTD propagation-lateral plane.
 
     Coordinates are ``(x, y)`` where ``x`` is the propagation direction and
-    ``y`` is the lateral coordinate. This mirrors the exploratory Annex 3
-    notebook geometry while keeping the vertices available as reusable data.
+    ``y`` is the lateral coordinate.
+
+    ``io_length_um`` is the total length of each access section:
+
+        straight section + taper section
+
+    ``straight_io_length_um`` specifies the straight waveguide length at the
+    outer side of each access. Setting it to zero reproduces the previous
+    geometry.
     """
 
     _validate_positive("length_um", length_um)
@@ -62,21 +146,46 @@ def mmi_2x2_vertices(
     _validate_positive("taper_width_um", taper_width_um)
     _validate_positive("mmi_width_input_um", mmi_width_input_um)
 
+    if straight_io_length_um < 0:
+        raise ValueError(
+            "straight_io_length_um must be non-negative."
+        )
+
+    if straight_io_length_um >= io_length_um:
+        raise ValueError(
+            "straight_io_length_um must be smaller than io_length_um."
+        )
+
     if io_y_position_um <= 0:
-        raise ValueError("io_y_position_um must be positive.")
+        raise ValueError(
+            "io_y_position_um must be positive."
+        )
 
     if mmi_width_center_um is None:
         mmi_width_center_um = mmi_width_input_um
 
-    _validate_positive("mmi_width_center_um", mmi_width_center_um)
+    _validate_positive(
+        "mmi_width_center_um",
+        mmi_width_center_um,
+    )
 
+    # MMI limits
     x0 = -0.5 * length_um
-    x1 = 0.5 * length_um
+    x1 = +0.5 * length_um
+
+    # Total access limits
     x_left = x0 - io_length_um
     x_right = x1 + io_length_um
+
+    # Transition between straight guide and taper
+    x_taper_left = x_left + straight_io_length_um
+    x_taper_right = x_right - straight_io_length_um
+
     y = io_y_position_um
+
     w_wg = access_width_um
     w_taper = taper_width_um
+
     w0 = mmi_width_input_um
     w1 = mmi_width_center_um
 
@@ -85,32 +194,64 @@ def mmi_2x2_vertices(
             (x0, -0.5 * w0),
             (0.0, -0.5 * w1),
             (x1, -0.5 * w0),
-            (x1, 0.5 * w0),
-            (0.0, 0.5 * w1),
-            (x0, 0.5 * w0),
+            (x1, +0.5 * w0),
+            (0.0, +0.5 * w1),
+            (x0, +0.5 * w0),
         ),
+
+        # ====================================================
+        # INPUT TOP
+        # straight guide -> taper -> MMI
+        # ====================================================
+
         "in_top": (
             (x_left, y - 0.5 * w_wg),
+            (x_taper_left, y - 0.5 * w_wg),
             (x0, y - 0.5 * w_taper),
             (x0, y + 0.5 * w_taper),
+            (x_taper_left, y + 0.5 * w_wg),
             (x_left, y + 0.5 * w_wg),
         ),
+
+        # ====================================================
+        # INPUT BOTTOM
+        # straight guide -> taper -> MMI
+        # ====================================================
+
         "in_bottom": (
             (x_left, -y - 0.5 * w_wg),
+            (x_taper_left, -y - 0.5 * w_wg),
             (x0, -y - 0.5 * w_taper),
             (x0, -y + 0.5 * w_taper),
+            (x_taper_left, -y + 0.5 * w_wg),
             (x_left, -y + 0.5 * w_wg),
         ),
+
+        # ====================================================
+        # OUTPUT TOP
+        # MMI -> taper -> straight guide
+        # ====================================================
+
         "out_top": (
             (x1, y - 0.5 * w_taper),
+            (x_taper_right, y - 0.5 * w_wg),
             (x_right, y - 0.5 * w_wg),
             (x_right, y + 0.5 * w_wg),
+            (x_taper_right, y + 0.5 * w_wg),
             (x1, y + 0.5 * w_taper),
         ),
+
+        # ====================================================
+        # OUTPUT BOTTOM
+        # MMI -> taper -> straight guide
+        # ====================================================
+
         "out_bottom": (
             (x1, -y - 0.5 * w_taper),
+            (x_taper_right, -y - 0.5 * w_wg),
             (x_right, -y - 0.5 * w_wg),
             (x_right, -y + 0.5 * w_wg),
+            (x_taper_right, -y + 0.5 * w_wg),
             (x1, -y + 0.5 * w_taper),
         ),
     }

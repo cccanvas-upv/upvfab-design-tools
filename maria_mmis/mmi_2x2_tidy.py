@@ -22,11 +22,11 @@ from upvfab_design_tools.tidy3d_plugin import (
     test_tidy3d_api,
 )
 
-RUN_TIDY3D_CLOUD = False 
+RUN_TIDY3D_CLOUD = True
 ESTIMATE_TIDY3D_COST = False
 LOAD_TIDY3D_DATA = False
 
-TIDY3D_TASK_NAME = "mmi_2x2_no_tapers_tidymaterials"
+TIDY3D_TASK_NAME = "mmi_2x2_ltaper15_Lememinus1.4_dy0.07_tidymaterials"
 
 TIDY3D_MATERIAL_BACKEND = "tidy3d"
 # "upvfab" -> usa materials.py
@@ -43,25 +43,35 @@ CORE_HEIGHT_UM = 0.3
 MMI_WIDTH_UM = 8.0
 
 # Resultado optimizado con EME + Tidy mode solver
-MMI_LENGTH_UM = 48.9487
+MMI_LENGTH_UM = 48.9487 - 1.4
 
-ACCESS_WIDTH_UM = 1.6
+ACCESS_WIDTH_UM = 1
 
-DY_UM = 0.12
+DY_UM = 0.07 #0.12
 
-# Posicion de las guias:
 # +/- (Wmmi/6 + dy)
 IO_Y_POSITION_UM = (MMI_WIDTH_UM / 6.0+ DY_UM)
 
-# Longitud de las guias rectas antes/despues del MMI
-IO_LENGTH_UM = 10.0
+# Longitud del tramo recto de acceso
+STRAIGHT_IO_LENGTH_UM = 2.0
+
+# Longitud del taper
+TAPER_LENGTH_UM = 15.0
+
+# Longitud total a cada lado del MMI
+IO_LENGTH_UM = STRAIGHT_IO_LENGTH_UM + TAPER_LENGTH_UM
+
 
 # SIN TAPER:
 # la anchura final del supuesto taper es igual
 # a la anchura de la guia de acceso.
-TAPER_WIDTH_UM = ACCESS_WIDTH_UM
+TAPER_WIDTH_UM = 1.6
 
 INPUT_PORT = "bottom"
+
+# Source y monitors en el centro de la guia recta de 4 um
+SOURCE_OFFSET_UM = (0.5 * STRAIGHT_IO_LENGTH_UM)
+MONITOR_OFFSET_UM = (0.5 * STRAIGHT_IO_LENGTH_UM)
 
 MODE_PLANE_Y_SPAN_UM = (2.5 * ACCESS_WIDTH_UM)
 
@@ -120,13 +130,13 @@ print(
 polygons = mmi_2x2_vertices(
     length_um=MMI_LENGTH_UM,
     io_length_um=IO_LENGTH_UM,
+    straight_io_length_um=STRAIGHT_IO_LENGTH_UM,
     io_y_position_um=IO_Y_POSITION_UM,
     access_width_um=ACCESS_WIDTH_UM,
     taper_width_um=TAPER_WIDTH_UM,
     mmi_width_input_um=MMI_WIDTH_UM,
     mmi_width_center_um=MMI_WIDTH_UM,
 )
-
 
 # CONSTRUIR SIMULACION FDTD
 
@@ -145,6 +155,9 @@ sim = build_mmi_2x2_fdtd_simulation(
     pad_x_um=2.0,
     pad_y_um=2.0,
     pad_z_um=0.0,
+
+    source_offset_um=SOURCE_OFFSET_UM,
+    monitor_offset_um=MONITOR_OFFSET_UM,
 
     mode_plane_y_span_um=MODE_PLANE_Y_SPAN_UM,
 
