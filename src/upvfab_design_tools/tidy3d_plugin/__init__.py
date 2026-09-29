@@ -25,6 +25,8 @@ _EXPORT_MODULES = {
     "mmi_2x2_sources_and_monitors": ".fdtd",
     "mmi_2x2_tidy3d_structures": ".fdtd",
     "mmi_2x2_vertices": ".fdtd",
+    "mmi_1x2_vertices": ".fdtd" ,
+    "build_mmi_1x2_fdtd_simulation": ".fdtd",
     "mode_solver_plane": ".conversion",
     "plot_fdtd_field_xy": ".fdtd",
     "plot_fdtd_polygons": ".fdtd",
