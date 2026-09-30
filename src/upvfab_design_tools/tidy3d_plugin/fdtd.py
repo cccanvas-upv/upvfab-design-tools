@@ -357,6 +357,115 @@ def mmi_1x2_vertices(
         ),
     }
 
+def mmi_1x4_vertices(
+    *,
+    length_um: float,
+    io_length_um: float,
+    output_y_positions_um: tuple[float, float, float, float],
+    access_width_um: float,
+    taper_width_um: float,
+    mmi_width_input_um: float,
+    mmi_width_center_um: float | None = None,
+    straight_io_length_um: float = 0.0,
+) -> dict[str, tuple[tuple[float, float], ...]]:
+    """Return 2D polygons for a centered-input 1x4 MMI.
+
+    Coordinates are (x, y), where x is propagation
+    and y is the lateral coordinate.
+
+    The input is centered at y = 0.
+
+    output_y_positions_um must contain the four output
+    positions ordered from bottom to top.
+    """
+
+    if len(output_y_positions_um) != 4:
+        raise ValueError(
+            "output_y_positions_um must contain exactly 4 positions."
+        )
+
+    if straight_io_length_um < 0:
+        raise ValueError(
+            "straight_io_length_um must be non-negative."
+        )
+
+    if straight_io_length_um >= io_length_um:
+        raise ValueError(
+            "straight_io_length_um must be smaller than io_length_um."
+        )
+
+    if mmi_width_center_um is None:
+        mmi_width_center_um = mmi_width_input_um
+
+    _validate_positive(
+        "mmi_width_center_um",
+        mmi_width_center_um,
+    )
+
+    x0 = -0.5 * length_um
+    x1 = +0.5 * length_um
+
+    x_left = x0 - io_length_um
+    x_right = x1 + io_length_um
+
+    x_taper_left = (
+        x_left + straight_io_length_um
+    )
+
+    x_taper_right = (
+        x_right - straight_io_length_um
+    )
+
+
+    w_wg = access_width_um
+    w_taper = taper_width_um
+
+    w0 = mmi_width_input_um
+    w1 = mmi_width_center_um
+
+    # Output positions, bottom -> top
+    y1, y2, y3, y4 = output_y_positions_um
+
+
+    polygons = {
+
+        "mmi": (
+            (x0, -0.5 * w0),
+            (0.0, -0.5 * w1),
+            (x1, -0.5 * w0),
+            (x1, +0.5 * w0),
+            (0.0, +0.5 * w1),
+            (x0, +0.5 * w0),
+        ),
+
+        # Single centered input
+        "in_center": (
+            (x_left, -0.5 * w_wg),
+            (x_taper_left, -0.5 * w_wg),
+            (x0, -0.5 * w_taper),
+            (x0, +0.5 * w_taper),
+            (x_taper_left, +0.5 * w_wg),
+            (x_left, +0.5 * w_wg),
+        ),
+    }
+
+
+    for index, y in enumerate(
+        (y1, y2, y3, y4),
+        start=1,
+    ):
+
+        polygons[f"out_{index}"] = (
+            (x1, y - 0.5 * w_taper),
+            (x_taper_right, y - 0.5 * w_wg),
+            (x_right, y - 0.5 * w_wg),
+            (x_right, y + 0.5 * w_wg),
+            (x_taper_right, y + 0.5 * w_wg),
+            (x1, y + 0.5 * w_taper),
+        )
+
+    return polygons
+
 
 
 def taper_vertices(
@@ -891,6 +1000,182 @@ def build_mmi_1x2_fdtd_simulation(
         ),
     )
 
+
+def build_mmi_1x4_fdtd_simulation(
+    *,
+    polygons: Mapping[str, tuple[tuple[float, float], ...]],
+    cross_section: CrossSection,
+    wavelength_um: float,
+    output_y_positions_um: tuple[float, float, float, float],
+    access_width_um: float,
+    straight_io_length_um: float,
+    bandwidth_um: float = 0.1,
+    pad_x_um: float = 2.0,
+    pad_y_um: float = 2.0,
+    pad_z_um: float = 1.0,
+    source_offset_um: float = 1.0,
+    monitor_offset_um: float = 1.0,
+    mode_plane_y_span_um: float | None = None,
+    mode_plane_z_span_um: float | None = None,
+    field_monitor_z_um: float | None = None,
+    field_monitor_name: str = "field_core",
+    min_steps_per_wvl: int = 20,
+    run_time_s: float = 2e-12,
+    core_name: str | None = "core",
+):
+    """Build a Tidy3D FDTD simulation for a 1x4 MMI."""
+
+    _validate_positive(
+        "wavelength_um",
+        wavelength_um,
+    )
+
+    _validate_positive(
+        "access_width_um",
+        access_width_um,
+    )
+
+    _validate_positive(
+        "straight_io_length_um",
+        straight_io_length_um,
+    )
+
+    _validate_positive(
+        "bandwidth_um",
+        bandwidth_um,
+    )
+
+    _validate_positive(
+        "source_offset_um",
+        source_offset_um,
+    )
+
+    _validate_positive(
+        "monitor_offset_um",
+        monitor_offset_um,
+    )
+
+    _validate_positive(
+        "min_steps_per_wvl",
+        min_steps_per_wvl,
+    )
+
+    _validate_positive(
+        "run_time_s",
+        run_time_s,
+    )
+
+    td = _import_tidy3d()
+
+    # ========================================================
+    # SIMULATION BOUNDS
+    # ========================================================
+
+    center, size = (
+        mmi_2x2_simulation_bounds(
+            polygons,
+            cross_section,
+            pad_x_um=pad_x_um,
+            pad_y_um=pad_y_um,
+            pad_z_um=pad_z_um,
+        )
+    )
+
+    # ========================================================
+    # STRUCTURES
+    # ========================================================
+
+    structures = (
+        mmi_2x2_tidy3d_structures(
+            polygons,
+            cross_section,
+            wavelength_um=wavelength_um,
+            simulation_center=center,
+            simulation_size=size,
+            core_name=core_name,
+        )
+    )
+
+    # ========================================================
+    # SOURCE + MONITORS
+    # ========================================================
+
+    sources, monitors = (
+        mmi_1x4_sources_and_monitors(
+            polygons=polygons,
+            cross_section=cross_section,
+            wavelength_um=wavelength_um,
+
+            output_y_positions_um=(
+                output_y_positions_um
+            ),
+
+            access_width_um=access_width_um,
+
+            straight_io_length_um=(
+                straight_io_length_um
+            ),
+
+            bandwidth_um=bandwidth_um,
+
+            source_offset_um=(
+                source_offset_um
+            ),
+
+            monitor_offset_um=(
+                monitor_offset_um
+            ),
+
+            mode_plane_y_span_um=(
+                mode_plane_y_span_um
+            ),
+
+            mode_plane_z_span_um=(
+                mode_plane_z_span_um
+            ),
+
+            field_monitor_z_um=(
+                field_monitor_z_um
+            ),
+
+            field_monitor_name=(
+                field_monitor_name
+            ),
+        )
+    )
+
+    # ========================================================
+    # SIMULATION
+    # ========================================================
+
+    return td.Simulation(
+        center=center,
+        size=size,
+
+        medium=material_to_tidy3d_medium(
+            cross_section.background_material,
+            wavelength_um=wavelength_um,
+        ),
+
+        structures=structures,
+
+        sources=sources,
+
+        monitors=monitors,
+
+        run_time=run_time_s,
+
+        grid_spec=td.GridSpec.auto(
+            wavelength=wavelength_um,
+            min_steps_per_wvl=min_steps_per_wvl,
+        ),
+
+        boundary_spec=td.BoundarySpec.all_sides(
+            boundary=td.PML()
+        ),
+    )
+
+
 def build_taper_fdtd_simulation(
     *,
     input_cross_section: CrossSection,
@@ -1305,6 +1590,225 @@ def mmi_1x2_sources_and_monitors(
         ),
     )
 
+def mmi_1x4_sources_and_monitors(
+    *,
+    polygons: Mapping[str, tuple[tuple[float, float], ...]],
+    cross_section: CrossSection,
+    wavelength_um: float,
+    output_y_positions_um: tuple[float, float, float, float],
+    access_width_um: float,
+    straight_io_length_um: float,
+    bandwidth_um: float,
+    source_offset_um: float,
+    monitor_offset_um: float,
+    mode_plane_y_span_um: float | None = None,
+    mode_plane_z_span_um: float | None = None,
+    field_monitor_z_um: float | None = None,
+    field_monitor_name: str = "field_core",
+):
+    """Create source and monitors for a 1x4 MMI."""
+
+    td = _import_tidy3d()
+
+    freq0 = td.C_0 / wavelength_um
+
+    fwidth = (
+        td.C_0
+        / wavelength_um**2
+        * bandwidth_um
+    )
+
+    source_time = td.GaussianPulse(
+        freq0=freq0,
+        fwidth=fwidth,
+    )
+
+    mode_spec = td.ModeSpec(
+        num_modes=1
+    )
+
+    x_min, x_max = _polygon_x_bounds(
+        polygons
+    )
+
+    # --------------------------------------------------------
+    # POSICIONES LONGITUDINALES
+    # --------------------------------------------------------
+
+    x_source = (
+        x_min + source_offset_um
+    )
+
+    # Reflection monitor antes de la fuente,
+    # pero dentro del tramo recto
+    x_ref_monitor = (
+        x_min + 0.5 * source_offset_um
+    )
+
+    x_monitor = (
+        x_max - monitor_offset_um
+    )
+
+    # --------------------------------------------------------
+    # POSICION VERTICAL
+    # --------------------------------------------------------
+
+    z_center = 0.5 * (
+        cross_section.z_min
+        + cross_section.z_max
+    )
+
+    y_span = (
+        mode_plane_y_span_um
+        if mode_plane_y_span_um is not None
+        else 2.5 * access_width_um
+    )
+
+    z_span = (
+        mode_plane_z_span_um
+        if mode_plane_z_span_um is not None
+        else cross_section.z_span
+    )
+
+    monitor_size = (
+        0.0,
+        y_span,
+        z_span,
+    )
+
+    # ========================================================
+    # SOURCE - ENTRADA CENTRADA
+    # ========================================================
+
+    mode_source = td.ModeSource(
+        center=(
+            x_source,
+            0.0,
+            z_center,
+        ),
+        size=monitor_size,
+        source_time=source_time,
+        direction="+",
+        mode_spec=mode_spec,
+        mode_index=0,
+        name="mode_source_input",
+    )
+
+    # ========================================================
+    # REFLECTION MONITORS
+    # ========================================================
+
+    flux_reflection = td.FluxMonitor(
+        center=(
+            x_ref_monitor,
+            0.0,
+            z_center,
+        ),
+        size=monitor_size,
+        freqs=[freq0],
+        name="flux_reflection",
+    )
+
+    mode_reflection = td.ModeMonitor(
+        center=(
+            x_ref_monitor,
+            0.0,
+            z_center,
+        ),
+        size=monitor_size,
+        freqs=[freq0],
+        mode_spec=mode_spec,
+        name="mode_reflection",
+    )
+
+    # ========================================================
+    # FOUR OUTPUTS
+    # ========================================================
+
+    output_flux_monitors = []
+    output_mode_monitors = []
+
+    for index, y_position in enumerate(
+        output_y_positions_um,
+        start=1,
+    ):
+
+        output_flux_monitors.append(
+            td.FluxMonitor(
+                center=(
+                    x_monitor,
+                    y_position,
+                    z_center,
+                ),
+                size=monitor_size,
+                freqs=[freq0],
+                name=f"flux_{index}",
+            )
+        )
+
+        output_mode_monitors.append(
+            td.ModeMonitor(
+                center=(
+                    x_monitor,
+                    y_position,
+                    z_center,
+                ),
+                size=monitor_size,
+                freqs=[freq0],
+                mode_spec=mode_spec,
+                name=f"mode_{index}",
+            )
+        )
+
+    # ========================================================
+    # FIELD MONITOR
+    # ========================================================
+
+    field_center, field_size = (
+        mmi_2x2_simulation_bounds(
+            polygons,
+            cross_section,
+            pad_x_um=0.0,
+            pad_y_um=0.0,
+            pad_z_um=0.0,
+        )
+    )
+
+    if field_monitor_z_um is None:
+
+        core_layer, _ = extract_fdtd_layers(
+            cross_section
+        )
+
+        field_monitor_z_um = (
+            core_layer.z_center
+        )
+
+    field_monitor = td.FieldMonitor(
+        center=(
+            field_center[0],
+            field_center[1],
+            field_monitor_z_um,
+        ),
+        size=(
+            field_size[0],
+            field_size[1],
+            0.0,
+        ),
+        freqs=[freq0],
+        name=field_monitor_name,
+    )
+
+    return (
+        (mode_source,),
+        (
+            flux_reflection,
+            mode_reflection,
+            *output_flux_monitors,
+            *output_mode_monitors,
+            field_monitor,
+        ),
+    )
 
 def taper_sources_and_monitors(
     *,
@@ -1416,6 +1920,43 @@ def print_mmi_2x2_fluxes(sim_data):
     print(f"Balance  = {balance:.6f}")
 
     return reflected, top, bottom
+
+def print_mmi_1x4_fluxes(sim_data):
+    """Print and return reflected/transmitted fluxes from a 1x4 MMI FDTD run."""
+
+    reflected = -float(
+        sim_data["flux_reflection"].flux.values[0]
+    )
+
+    transmissions = [
+        float(
+            sim_data[f"flux_{index}"].flux.values[0]
+        )
+        for index in range(1, 5)
+    ]
+
+    total = float(sum(transmissions))
+
+    balance = (reflected + total)
+
+    print(f"R       = {reflected:.6f}")
+
+    for index, transmission in enumerate(
+        transmissions,
+        start=1,
+    ):
+        print(
+            f"T_{index}     = {transmission:.6f}"
+        )
+
+    print(f"T_total = {total:.6f}")
+
+    print(f"Balance = {balance:.6f}")
+
+    return (
+        reflected,
+        *transmissions,
+    )
 
 
 def print_taper_transmission(sim_data):

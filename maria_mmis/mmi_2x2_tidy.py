@@ -22,11 +22,11 @@ from upvfab_design_tools.tidy3d_plugin import (
     test_tidy3d_api,
 )
 
-RUN_TIDY3D_CLOUD = True
+RUN_TIDY3D_CLOUD = False
 ESTIMATE_TIDY3D_COST = False
 LOAD_TIDY3D_DATA = False
 
-TIDY3D_TASK_NAME = "mmi_2x2_Lememinus1.6_dy0.12_wt2.1"
+TIDY3D_TASK_NAME = "mmi_2x2_Lememinus1.6_dy0.14_wt2.1"
 
 TIDY3D_MATERIAL_BACKEND = "upvfab"
 # "upvfab" -> usa materials.py
@@ -43,6 +43,7 @@ CORE_HEIGHT_UM = 0.3
 MMI_WIDTH_UM = 8.0
 
 # Resultado optimizado con EME + Tidy mode solver
+
 MMI_LENGTH_UM = 48.9487 - 1.6
 
 ACCESS_WIDTH_UM = 1
@@ -53,10 +54,10 @@ DY_UM = 0.12 #0.12
 IO_Y_POSITION_UM = (MMI_WIDTH_UM / 6.0+ DY_UM)
 
 # Longitud del tramo recto de acceso
-STRAIGHT_IO_LENGTH_UM = 2.1
+STRAIGHT_IO_LENGTH_UM = 2
 
 # Longitud del taper
-TAPER_LENGTH_UM = 15.0
+TAPER_LENGTH_UM = 20.0
 
 # Longitud total a cada lado del MMI
 IO_LENGTH_UM = STRAIGHT_IO_LENGTH_UM + TAPER_LENGTH_UM
