@@ -71,7 +71,7 @@ class Material:
 
 SILICON_NITRIDE = Material(
     name="Silicon Nitride",
-    index_model=1.996,
+    index_model= 2.084, #1.996,
     aliases=("SiN", "Si3N4", "silicon_nitride"),
     description="Silicon nitride.",
 )

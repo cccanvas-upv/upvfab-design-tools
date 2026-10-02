@@ -40,7 +40,7 @@ NOMINAL_WIDTH_UM = 1.0
 WIDTH_DEV_UM = 0.0
 WIDTH_UM = NOMINAL_WIDTH_UM + WIDTH_DEV_UM
 
-NOMINAL_SIDEWALL_ANGLE_DEG = 20 #no estandarizado, G me ha dicho que se han obtenido entre 70-80º (se traducen a 30-20º en la convencción de la xs creo)
+NOMINAL_SIDEWALL_ANGLE_DEG = 0 #no estandarizado, G me ha dicho que se han obtenido entre 70-80º (se traducen a 30-20º en la convencción de la xs creo)
 SIDEWALL_ANGLE_DEV_DEG = 0.0
 SIDEWALL_ANGLE_DEG = NOMINAL_SIDEWALL_ANGLE_DEG + SIDEWALL_ANGLE_DEV_DEG
 
@@ -81,7 +81,7 @@ N_HEIGHT = 21
 PLOTS = {
     "cross_section": True,
     "modes": False,
-    "neff_lambda": False,
+    "neff_lambda": True,
     "ng_lambda": False,
     "neff_width": False,
     "neff_sidewall_angle": False,
@@ -126,8 +126,8 @@ if PLOTS["cross_section"]:
 
 solver_femwell = FemwellModeSolver(
     default_resolution = 0.3, 
-        min_resolution = 0.01, 
-        resolution_factor = 10.0,
+        min_resolution = 0.03, 
+        resolution_factor = 6,
         filter_guided = True, 
         reference_material = THERMAL_SILICON_DIOXIDE, 
         guided_tolerance = 1e-2, 

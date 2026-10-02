@@ -17,13 +17,14 @@ from upvfab_design_tools.tidy3d_plugin import (
     load_tidy3d_simulation_data,
     mmi_1x4_vertices,
     plot_fdtd_field_xy,
-    plot_mmi_2x2_vertices,
+    #plot_mmi_2x2_vertices,
+    plot_fdtd_polygons,
     print_mmi_1x4_fluxes,
     test_tidy3d_api,
 )
 
 
-RUN_TIDY3D_CLOUD = True
+RUN_TIDY3D_CLOUD = False
 ESTIMATE_TIDY3D_COST = False
 LOAD_TIDY3D_DATA = False
 
@@ -260,7 +261,7 @@ if len(sim.sources) > 0:
 # REPRESENTAR POLIGONOS
 
 fig_vertices, ax_vertices = (
-    plot_mmi_2x2_vertices(
+    plot_fdtd_polygons(
         polygons
     )
 )
