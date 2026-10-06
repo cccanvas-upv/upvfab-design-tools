@@ -35,57 +35,26 @@ def material_to_tidy3d_medium(
 
     td = _import_tidy3d()
 
-    # ========================================================
-    # TIDY3D NATIVE MATERIAL LIBRARY
-    # ========================================================
-
     if TIDY3D_MATERIAL_BACKEND == "tidy3d":
 
         material_name = material.name.lower()
 
         # Silicon nitride
-        if (
-            "silicon nitride" in material_name
-            or material_name == "sin"
-            or material_name == "si3n4"
-        ):
-            return td.material_library[
-                "Si3N4"
-            ]["Luke2015Sellmeier"]
-
+        if ("silicon nitride" in material_name or material_name == "sin" or material_name == "si3n4"):
+            return td.material_library["Si3N4"]["Luke2015Sellmeier"]
         # Thermal silicon dioxide
-        if (
-            "silicon dioxide" in material_name
-            or "sio2" in material_name
-            or "oxide" in material_name
-        ):
-            return td.material_library[
-                "SiO2"
-            ]["Palik_Lossless"]
-
-    # ========================================================
-    # ORIGINAL UPVFAB MATERIAL MODEL
-    # ========================================================
+        if ( "silicon dioxide" in material_name or "sio2" in material_name or "oxide" in material_name):
+            return td.material_library["SiO2"]["Palik_Lossless"]
 
     if TIDY3D_MATERIAL_BACKEND == "upvfab":
 
-        epsilon = material.epsilon(
-            wavelength_um
-        )
+        epsilon = material.epsilon(wavelength_um)
+        epsilon = _real_epsilon_for_tidy3d(epsilon,material.name)
 
-        epsilon = _real_epsilon_for_tidy3d(
-            epsilon,
-            material.name,
-        )
+        return td.Medium(permittivity=epsilon, name=material.name)
 
-        return td.Medium(
-            permittivity=epsilon,
-            name=material.name,
-        )
-
-    raise ValueError(
-        "TIDY3D_MATERIAL_BACKEND must be "
-        "'upvfab' or 'tidy3d'."
+    raise ValueError("TIDY3D_MATERIAL_BACKEND must be "
+"'upvfab' or 'tidy3d'."
     )
 
 
