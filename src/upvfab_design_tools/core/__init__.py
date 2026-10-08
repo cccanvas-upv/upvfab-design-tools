@@ -12,6 +12,7 @@ from .geometry import (
 
 from .materials import (
     BCB,
+    CauchyIndexModel,
     LPCVD_SILICON_DIOXIDE,
     MATERIALS,
     SILICON,
@@ -22,6 +23,7 @@ from .materials import (
 )
 
 __all__ = [
+    "CauchyIndexModel",
     "Material",
     "SILICON_NITRIDE",
     "THERMAL_SILICON_DIOXIDE",
