@@ -26,9 +26,9 @@ from upvfab_design_tools.tidy3d_plugin import (
 
 RUN_TIDY3D_CLOUD = False
 ESTIMATE_TIDY3D_COST = False
-LOAD_TIDY3D_DATA = False
+LOAD_TIDY3D_DATA = True
 
-TIDY3D_TASK_NAME = "mmi_1x4_Lememinus1.3_wt1.5"
+TIDY3D_TASK_NAME = "mmi_1x4_Lememinus1_wt1.5_elipso"
 
 TIDY3D_MATERIAL_BACKEND = "upvfab"
 # "upvfab" -> materials.py
@@ -46,8 +46,8 @@ CORE_HEIGHT_UM = 0.3
 MMI_WIDTH_UM = 12.0
 
 # Resultado optimizado con EME + Tidy mode solver
-DL = -1.3
-MMI_LENGTH_UM = 39.9954 + DL
+DL = -1
+MMI_LENGTH_UM = 39.7234 + DL
 
 
 ACCESS_WIDTH_UM = 1.0
@@ -77,12 +77,13 @@ MODE_PLANE_Y_SPAN_UM = (2.5 * ACCESS_WIDTH_UM)
 # Deben estar ordenadas de abajo hacia arriba:
 # (ABAJO) y1 < y2 < y3 < y4 (ARRIBA)
 
+DY = 0.05
 
 OUTPUT_Y_POSITIONS_UM = (
-    -4.65,
-    -1.54 ,
-    +1.54,
-    +4.65,
+    -4.65 +DY,
+    -1.54 + DY,
+    +1.54 + DY,
+    +4.65 +DY,
 )
 
 DOMAIN_X_SPAN_UM = (MMI_WIDTH_UM + 4.0)
@@ -432,6 +433,9 @@ if sim_data is not None:
         ]}"
     )
 
+    print(f"L_mmi = {MMI_LENGTH_UM}")
+
+
 
     
     # FIELD
@@ -451,6 +455,43 @@ if sim_data is not None:
         f"{TIDY3D_TASK_NAME}"
     )
 
+
+    # FASES RELATIVAS DE LOS MODOS DE SALIDA
+
+    output_amplitudes = np.array([
+        complex(
+            sim_data[f"mode_{index}"].amps
+            .sel(direction="+", mode_index=0)
+            .isel(f=0)
+            .values.squeeze()
+        )
+        for index in range(1, 5)
+    ])
+
+
+    # Tomamos la salida 1 como referencia
+    reference_amplitude = output_amplitudes[0]
+
+    relative_phases_rad = np.angle(
+        output_amplitudes
+        * np.conj(reference_amplitude)
+    )
+
+    relative_phases_deg = np.degrees(
+        relative_phases_rad
+    )
+
+
+    print("\n--- OUTPUT RELATIVE PHASES ---")
+
+    for index, phase_deg in enumerate(
+        relative_phases_deg,
+        start=1,
+    ):
+        print(
+            f"Output {index} relative to Output 1: "
+            f"{phase_deg:+.4f} deg"
+        )
 
 plt.show()
 

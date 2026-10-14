@@ -304,14 +304,14 @@ def _import_tidy3d_fitter():
 
 SILICON_NITRIDE = Material(
     name="Silicon Nitride",
-    index_model= 2.084, #1.996,
+    index_model=CauchyIndexModel(A=1.9662661,B=1.5894986,C=0.0,wavelength_min_um=1.5,wavelength_max_um=1.6),
     aliases=("SiN", "Si3N4", "silicon_nitride"),
     description="Silicon nitride.",
 )
 
 THERMAL_SILICON_DIOXIDE = Material(
     name="Thermal Silicon Dioxide",
-    index_model=1.444,
+    index_model=CauchyIndexModel(A=1.4537747,B=0.7000546,C=-0.4899589,wavelength_min_um=1.5,wavelength_max_um=1.6),
     aliases=("SiO2 thermal", "thermal_sio2", "thermal oxide"),
     description="Thermal silicon dioxide.",
 )
@@ -332,7 +332,7 @@ SILICON = Material(
 
 BCB = Material(
     name="Benzocyclobutene",
-    index_model=1.550,
+    index_model=CauchyIndexModel(A=1.5742164,B=0.8603089,C=0.7341377,wavelength_min_um=1.5,wavelength_max_um=1.6),
     aliases=("BCB", "benzocyclobutene"),
     description="Benzocyclobutene polymer.",
 )

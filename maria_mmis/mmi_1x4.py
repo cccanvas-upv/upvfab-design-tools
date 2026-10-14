@@ -34,7 +34,7 @@ MODE_SOLVER_BACKEND: Literal["femwell", "tidy"] = "tidy"
 WAVELENGTH_UM = 1.55
 CORE_HEIGHT_UM = 0.3
 
-MMI_WIDTH_UM = 12
+MMI_WIDTH_UM = 10
 
 # Anchura nominal + incremento
 ACCESS_WIDTH_BASE_UM = 1

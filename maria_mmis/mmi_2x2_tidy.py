@@ -24,9 +24,9 @@ from upvfab_design_tools.tidy3d_plugin import (
 
 RUN_TIDY3D_CLOUD = False
 ESTIMATE_TIDY3D_COST = False
-LOAD_TIDY3D_DATA = False
+LOAD_TIDY3D_DATA = True
 
-TIDY3D_TASK_NAME = "mmi_2x2_Lememinus1.6_dy0.14_wt2.1"
+TIDY3D_TASK_NAME = "mmi_2x2_Lememinus1.4_dy0.12_wt2"
 
 TIDY3D_MATERIAL_BACKEND = "upvfab"
 # "upvfab" -> usa materials.py
@@ -44,11 +44,12 @@ MMI_WIDTH_UM = 8.0
 
 # Resultado optimizado con EME + Tidy mode solver
 
-MMI_LENGTH_UM = 48.9487 - 1.6
+MMI_LENGTH_UM = 49.1895 - 1.4
 
 ACCESS_WIDTH_UM = 1
 
-DY_UM = 0.12 #0.12
+DY_UM = 0.14
+#0.12
 
 # +/- (Wmmi/6 + dy)
 IO_Y_POSITION_UM = (MMI_WIDTH_UM / 6.0+ DY_UM)
@@ -57,7 +58,7 @@ IO_Y_POSITION_UM = (MMI_WIDTH_UM / 6.0+ DY_UM)
 STRAIGHT_IO_LENGTH_UM = 2
 
 # Longitud del taper
-TAPER_LENGTH_UM = 20.0
+TAPER_LENGTH_UM = 15.0
 
 # Longitud total a cada lado del MMI
 IO_LENGTH_UM = STRAIGHT_IO_LENGTH_UM + TAPER_LENGTH_UM
@@ -471,6 +472,67 @@ if sim_data is not None:
     print(
         "Splitting ratio [%]: "
         f"{[f'{100 * value:.2f}' for value in splitting_ratio]}"
+    )
+
+        # ============================================================
+    # FASES DE LAS SALIDAS
+    # ============================================================
+
+    amp_top = complex(
+        sim_data["mode_top"].amps
+        .sel(direction="+", mode_index=0)
+        .isel(f=0)
+        .values.squeeze()
+    )
+
+    amp_bottom = complex(
+        sim_data["mode_bottom"].amps
+        .sel(direction="+", mode_index=0)
+        .isel(f=0)
+        .values.squeeze()
+    )
+
+
+    # Fases individuales
+    phase_top_deg = np.degrees(
+        np.angle(amp_top)
+    )
+
+    phase_bottom_deg = np.degrees(
+        np.angle(amp_bottom)
+    )
+
+
+    # Fase relativa TOP - BOTTOM
+    phase_difference_rad = np.angle(
+        amp_top * np.conj(amp_bottom)
+    )
+
+    phase_difference_deg = np.degrees(
+        phase_difference_rad
+    )
+
+
+    print("\n--- OUTPUT PHASES ---")
+
+    print(
+        f"TOP phase: "
+        f"{phase_top_deg:+.4f} deg"
+    )
+
+    print(
+        f"BOTTOM phase: "
+        f"{phase_bottom_deg:+.4f} deg"
+    )
+
+    print(
+        f"Relative phase TOP - BOTTOM: "
+        f"{phase_difference_deg:+.4f} deg"
+    )
+
+    print(
+        f"Relative phase TOP - BOTTOM: "
+        f"{phase_difference_rad:+.6f} rad"
     )
     fig_field, ax_field = plot_fdtd_field_xy(
         sim_data,

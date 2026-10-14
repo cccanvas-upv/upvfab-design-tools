@@ -22,11 +22,11 @@ from upvfab_design_tools.tidy3d_plugin import (
     test_tidy3d_api,
 )
 
-RUN_TIDY3D_CLOUD = False
+RUN_TIDY3D_CLOUD = True
 ESTIMATE_TIDY3D_COST = False
 LOAD_TIDY3D_DATA = False
 
-TIDY3D_TASK_NAME = "mmi_1x2_material"
+TIDY3D_TASK_NAME = "mmi_1x2_dy0.0_dLminus1.3_wt2.1_elipso"
 
 TIDY3D_MATERIAL_BACKEND = "upvfab"
 # "upvfab" -> usa materials.py
@@ -46,14 +46,14 @@ CORE_HEIGHT_UM = 0.3
 MMI_WIDTH_UM = 8.0
 
 # Resultado optimizado con EME + Tidy mode solver
-LENGTH_MMI_EME = 37.3421 -1.4
-dl = -0.1
+LENGTH_MMI_EME = 36.7421 -1.3
+dl = 0
 
 MMI_LENGTH_UM = LENGTH_MMI_EME + dl
 ACCESS_WIDTH_UM = 1
 
 
-DY_UM = 0
+DY_UM = 0.0
 INPUT_Y_POSITION_UM = 0.0
 
 # Dos salidas simétricas
@@ -75,7 +75,7 @@ IO_LENGTH_UM = STRAIGHT_IO_LENGTH_UM + TAPER_LENGTH_UM
 # SIN TAPER:
 # la anchura final del supuesto taper es igual
 # a la anchura de la guia de acceso.
-TAPER_WIDTH_UM = 2
+TAPER_WIDTH_UM = 2.1
 
 
 # Source y monitors en el centro de la guia recta de 4 um

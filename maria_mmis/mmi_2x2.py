@@ -30,7 +30,7 @@ from upvfab_design_tools.modesolver import (
 
 # CONFIGURACION
 
-MODE_SOLVER_BACKEND: Literal["femwell", "tidy"] = "femwell"
+MODE_SOLVER_BACKEND: Literal["femwell", "tidy"] = "tidy"
 
 WAVELENGTH_UM = 1.55
 CORE_HEIGHT_UM = 0.3
