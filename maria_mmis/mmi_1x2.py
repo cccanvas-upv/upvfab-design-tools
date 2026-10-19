@@ -11,6 +11,7 @@ from upvfab_design_tools.core.materials import (
 )
 from upvfab_design_tools.core.waveguides import strip_waveguide
 
+
 from upvfab_design_tools.eme import (
     modal_excitation_coefficients,
     normalize_profile,

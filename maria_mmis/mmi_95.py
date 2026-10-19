@@ -18,58 +18,58 @@ RUN_TIDY3D_CLOUD = True
 ESTIMATE_TIDY3D_COST = False
 LOAD_TIDY3D_DATA = False
 
-TIDY3D_TASK_NAME = "mmi95_lambda_0"
+TIDY3D_TASK_NAME = "mmi95_wt1.4_Awplus0.35_L0plus11.5_dyminus0.02"
 
 # Archivo local donde se guardaran los resultados
 TIDY3D_DATA_PATH = f"data/{TIDY3D_TASK_NAME}.hdf5"
 
 ################ MATERIALES
-sin, sin_rms = SILICON_NITRIDE.fit_tidy(
-    wavelength_min_um=1.5,
-    wavelength_max_um=1.6,
-    num_samples=201,
-    max_num_poles=2,
-    tolerance_rms=1e-4,
-)
+# sin, sin_rms = SILICON_NITRIDE.fit_tidy(
+#     wavelength_min_um=1.5,
+#     wavelength_max_um=1.6,
+#     num_samples=201,
+#     max_num_poles=2,
+#     tolerance_rms=1e-4,
+# )
 
-sio2, sio2_rms = THERMAL_SILICON_DIOXIDE.fit_tidy(
-    wavelength_min_um=1.5,
-    wavelength_max_um=1.6,
-    num_samples=201,
-    max_num_poles=2,
-    tolerance_rms=1e-4,
-)
+# sio2, sio2_rms = THERMAL_SILICON_DIOXIDE.fit_tidy(
+#     wavelength_min_um=1.5,
+#     wavelength_max_um=1.6,
+#     num_samples=201,
+#     max_num_poles=2,
+#     tolerance_rms=1e-4,
+# )
 
 _n_sin = SILICON_NITRIDE.n(1.55)
 n_sin = np.real(_n_sin)
 
-# sin = td.Medium(
-#     permittivity=(
-#         SILICON_NITRIDE.n(1.55).real ** 2
-#     )
-# )
+sin = td.Medium(
+    permittivity=(
+        SILICON_NITRIDE.n(1.55).real ** 2
+    )
+)
 
-# sio2 = td.Medium(
-#     permittivity=(
-#         THERMAL_SILICON_DIOXIDE.n(1.55).real ** 2
-#     )
-# )
+sio2 = td.Medium(
+    permittivity=(
+        THERMAL_SILICON_DIOXIDE.n(1.55).real ** 2
+    )
+)
 #######################################################
 
 L_pi_mmi = 153.512432 #recalcular con los modesolvers de designtools si se considera necesario
 W_mmi = 10
-dW =  0.72 +0.08
+dW =  0.72 +0.35
 deltaW = 1 - 2*dW/W_mmi
 L_mmi = deltaW * (1/3)* 3*L_pi_mmi
 W_narrow = W_mmi - dW
 h_core = 0.30 
 L_wg = 10.0
 #tapers 
-lt = 75.0 # um, taper length
-Wt = 2.7 #IMPORTANTE NO SUPERARLO #taper width at mmi interface
+lt = 77.0 # um, taper length
+Wt = 1.4 #IMPORTANTE NO SUPERARLO #taper width at mmi interface
 wt = 1 # access wvg
 
-dy = -0.0 # um.
+dy = -0.02 # um.
                         # dy > 0 -> los puertos se separan más
                         # dy < 0 -> los puertos se acercan al centro
 
@@ -496,7 +496,7 @@ def make_sim(
 
 #########################################################################################################################################################
 L_0 = deltaW * (1/3)* 3*L_pi_mmi
-L_mmi= L_0 + 8 -1
+L_mmi= L_0 + 8.5 +3
 #############################################################################################################################################################3
 fig, ax = plt.subplots(figsize=(24, 6))
 sim = make_sim( L_mmi, W_mmi, W_narrow)

@@ -142,6 +142,85 @@ def rib_waveguide(
         structures=(*tuple(surrounding_regions), slab, ridge),
     )
 
+def strip_waveguide_bcb(
+    *,
+    width: float,
+    height: float,
+    core_material: Material,
+    top_material: Material,
+    top_material_thickness: float,
+    background_material: Material,
+    air: Material, 
+    x_center: float = 0.0,
+    z_min: float = 0.0,
+    sidewall_angle_deg: float = 0.0,
+    width_reference: Literal["top", "bottom"] = "top",
+    x_span: float = 6.0,
+    bottom_margin: float = 2.0,
+    top_margin: float = 2.0,
+    surrounding_regions: Iterable[GeometryPrimitive] = (),
+    name: str = "strip_waveguide_bcb",
+) -> CrossSection:
+    """
+    Create a strip waveguide cross-section.
+
+    If sidewall_angle_deg = 0, the core is rectangular.
+    If sidewall_angle_deg != 0, the core is trapezoidal.
+    """
+
+    if width <= 0:
+        raise ValueError("width must be positive.")
+
+    if height <= 0:
+        raise ValueError("height must be positive.")
+
+    if top_material_thickness <= 0:
+            raise ValueError("Top material thickness must be positive.")
+
+    x_min = x_center - 0.5 * x_span
+    x_max = x_center + 0.5 * x_span
+    domain_z_min = z_min - bottom_margin
+    domain_z_max = z_min + height + top_margin
+
+    core = _make_waveguide_core(
+        width=width,
+        height=height,
+        material=core_material,
+        x_center=x_center,
+        z_min=z_min,
+        sidewall_angle_deg=sidewall_angle_deg,
+        width_reference=width_reference,
+        name="core",
+    )
+
+    bcb = Rectangle(
+         x_min = x_min, 
+         x_max = x_max, 
+         z_min = 0.0, 
+         z_max = top_material_thickness, 
+         material = top_material, 
+         name = "BCB",
+    )
+
+    air_region = Rectangle(
+        x_min = x_min, 
+        x_max = x_max, 
+        z_min = top_material_thickness, 
+        z_max = top_material_thickness + bottom_margin, 
+        material = air, 
+        name = "Air",
+    )
+
+    return CrossSection(
+        name=name,
+        background_material=background_material,
+        x_min=x_min,
+        x_max=x_max,
+        z_min=domain_z_min,
+        z_max=domain_z_max,
+        structures= (bcb, air_region, core),
+    )
+
 
 def _make_waveguide_core(
     *,

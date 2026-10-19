@@ -22,15 +22,13 @@ from upvfab_design_tools.tidy3d_plugin import (
     test_tidy3d_api,
 )
 
-RUN_TIDY3D_CLOUD = False
+RUN_TIDY3D_CLOUD = True
 ESTIMATE_TIDY3D_COST = False
-LOAD_TIDY3D_DATA = True
+LOAD_TIDY3D_DATA = False
 
-TIDY3D_TASK_NAME = "mmi_2x2_Lememinus1.4_dy0.12_wt2"
 
-TIDY3D_MATERIAL_BACKEND = "upvfab"
-# "upvfab" -> usa materials.py
-# "tidy3d" -> usa la material_library nativa de Tidy3D
+TIDY3D_TASK_NAME = "mmi_2x2_W10_Lememinus1.6_dy0.14_wt2.7"
+
 
 # Archivo local donde se guardaran los resultados
 TIDY3D_DATA_PATH = f"data/{TIDY3D_TASK_NAME}.hdf5"
@@ -40,12 +38,11 @@ TIDY3D_DATA_PATH = f"data/{TIDY3D_TASK_NAME}.hdf5"
 
 WAVELENGTH_UM = 1.55
 CORE_HEIGHT_UM = 0.3
-MMI_WIDTH_UM = 8.0
+MMI_WIDTH_UM = 10.0
 
 # Resultado optimizado con EME + Tidy mode solver
 
-MMI_LENGTH_UM = 49.1895 - 1.4
-
+MMI_LENGTH_UM = 76.4844 -1.65
 ACCESS_WIDTH_UM = 1
 
 DY_UM = 0.14
@@ -58,7 +55,7 @@ IO_Y_POSITION_UM = (MMI_WIDTH_UM / 6.0+ DY_UM)
 STRAIGHT_IO_LENGTH_UM = 2
 
 # Longitud del taper
-TAPER_LENGTH_UM = 15.0
+TAPER_LENGTH_UM = 45.0
 
 # Longitud total a cada lado del MMI
 IO_LENGTH_UM = STRAIGHT_IO_LENGTH_UM + TAPER_LENGTH_UM
@@ -67,7 +64,7 @@ IO_LENGTH_UM = STRAIGHT_IO_LENGTH_UM + TAPER_LENGTH_UM
 # SIN TAPER:
 # la anchura final del supuesto taper es igual
 # a la anchura de la guia de acceso.
-TAPER_WIDTH_UM = 2
+TAPER_WIDTH_UM = 2.7
 
 INPUT_PORT = "bottom"
 
@@ -190,6 +187,27 @@ if ESTIMATE_TIDY3D_COST:
     )
 
 print("\nSimulation validated successfully.")
+
+print("\n--- MATERIAL CHECK ---")
+
+print(
+    "Background medium:"
+)
+
+print(
+    sim.medium
+)
+
+print(
+    "\nStructure media:"
+)
+
+for structure in sim.structures:
+
+    print(
+        structure.name,
+        structure.medium,
+    )
 
 
 

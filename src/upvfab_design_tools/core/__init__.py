@@ -1,6 +1,6 @@
 from .cross_section import CrossSection
 from .visualization import plot_cross_section, save_figure
-from .waveguides import rib_waveguide, strip_waveguide
+from .waveguides import rib_waveguide, strip_waveguide, strip_waveguide_bcb
 
 from .geometry import (
     Bounds2D,
@@ -39,6 +39,7 @@ __all__ = [
     "GeometryPrimitive",
     "CrossSection",
     "strip_waveguide",
+    "strip_waveguide_bcb"
     "rib_waveguide",
     "plot_cross_section",
     "save_figure",

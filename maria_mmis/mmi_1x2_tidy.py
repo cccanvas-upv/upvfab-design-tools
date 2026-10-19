@@ -22,18 +22,13 @@ from upvfab_design_tools.tidy3d_plugin import (
     test_tidy3d_api,
 )
 
-RUN_TIDY3D_CLOUD = True
-ESTIMATE_TIDY3D_COST = False
+RUN_TIDY3D_CLOUD = False
+ESTIMATE_TIDY3D_COST = True
 LOAD_TIDY3D_DATA = False
 
-TIDY3D_TASK_NAME = "mmi_1x2_dy0.0_dLminus1.3_wt2.1_elipso"
+TIDY3D_TASK_NAME = "mmi_1x2_dy0.05_dLminus1_wt1.4_elipso"
 
-TIDY3D_MATERIAL_BACKEND = "upvfab"
-# "upvfab" -> usa materials.py
-# "tidy3d" -> usa la material_library nativa de Tidy3D
-from upvfab_design_tools.tidy3d_plugin import conversion as tidy_conversion
 
-tidy_conversion.TIDY3D_MATERIAL_BACKEND = TIDY3D_MATERIAL_BACKEND
 
 # Archivo local donde se guardaran los resultados
 TIDY3D_DATA_PATH = f"data/{TIDY3D_TASK_NAME}.hdf5"
@@ -46,14 +41,14 @@ CORE_HEIGHT_UM = 0.3
 MMI_WIDTH_UM = 8.0
 
 # Resultado optimizado con EME + Tidy mode solver
-LENGTH_MMI_EME = 36.7421 -1.3
+LENGTH_MMI_EME = 36.7421 -1
 dl = 0
 
 MMI_LENGTH_UM = LENGTH_MMI_EME + dl
 ACCESS_WIDTH_UM = 1
 
 
-DY_UM = 0.0
+DY_UM = 0.05
 INPUT_Y_POSITION_UM = 0.0
 
 # Dos salidas simétricas
@@ -75,7 +70,7 @@ IO_LENGTH_UM = STRAIGHT_IO_LENGTH_UM + TAPER_LENGTH_UM
 # SIN TAPER:
 # la anchura final del supuesto taper es igual
 # a la anchura de la guia de acceso.
-TAPER_WIDTH_UM = 2.1
+TAPER_WIDTH_UM = 1.4
 
 
 # Source y monitors en el centro de la guia recta de 4 um
@@ -169,40 +164,27 @@ sim = build_mmi_1x2_fdtd_simulation(
     run_time_s=5e-12,
 )
 
-# ============================================================
-# CHECK ACTUAL FDTD MATERIALS
-# ============================================================
-
-import tidy3d as td
-
-freq0 = td.C_0 / WAVELENGTH_UM
-
-core_medium = next(
-    structure.medium
-    for structure in sim.structures
-    if structure.name == "mmi"
-)
-
-background_medium = sim.medium
-
-n_core, k_core = core_medium.nk_model(freq0)
-n_background, k_background = background_medium.nk_model(freq0)
-
-print("\n--- MATERIAL BACKEND CHECK ---")
+print("\n--- MATERIAL CHECK ---")
 
 print(
-    f"Selected backend: {TIDY3D_MATERIAL_BACKEND}"
+    "Background medium:"
 )
 
 print(
-    f"SiN:  {type(core_medium).__name__}, "
-    f"n={n_core:.6f}, k={k_core:.3e}"
+    sim.medium
 )
 
 print(
-    f"SiO2: {type(background_medium).__name__}, "
-    f"n={n_background:.6f}, k={k_background:.3e}"
+    "\nStructure media:"
 )
+
+for structure in sim.structures:
+
+    print(
+        structure.name,
+        structure.medium,
+    )
+
 
 # VALIDACION LOCAL
 
@@ -254,11 +236,6 @@ print(
 print(
     f"dy: "
     f"{DY_UM:+.4f} um"
-)
-
-print(
-    f"Wmmi / 6: "
-    f"{MMI_WIDTH_UM / 6.0:.6f} um"
 )
 
 print(

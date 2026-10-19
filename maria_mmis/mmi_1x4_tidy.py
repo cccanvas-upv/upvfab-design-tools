@@ -24,19 +24,12 @@ from upvfab_design_tools.tidy3d_plugin import (
 )
 
 
-RUN_TIDY3D_CLOUD = False
+RUN_TIDY3D_CLOUD = True
 ESTIMATE_TIDY3D_COST = False
-LOAD_TIDY3D_DATA = True
+LOAD_TIDY3D_DATA = False
 
-TIDY3D_TASK_NAME = "mmi_1x4_Lememinus1_wt1.5_elipso"
+TIDY3D_TASK_NAME = "mmi_1x4_Lememinus1_wt1.4_dy0.03_elipso"
 
-TIDY3D_MATERIAL_BACKEND = "upvfab"
-# "upvfab" -> materials.py
-# "tidy3d" -> material_library nativa de Tidy3D
-
-from upvfab_design_tools.tidy3d_plugin import conversion as tidy_conversion
-
-tidy_conversion.TIDY3D_MATERIAL_BACKEND = (TIDY3D_MATERIAL_BACKEND)
 
 TIDY3D_DATA_PATH = (f"data/{TIDY3D_TASK_NAME}.hdf5")
 
@@ -53,7 +46,7 @@ MMI_LENGTH_UM = 39.7234 + DL
 ACCESS_WIDTH_UM = 1.0
 
 # Anchura del taper
-TAPER_WIDTH_UM = 1.5
+TAPER_WIDTH_UM = 1.4
 TAPER_LENGTH_UM = 15.0
 
 # Tramo recto exterior para source / monitors
@@ -77,7 +70,7 @@ MODE_PLANE_Y_SPAN_UM = (2.5 * ACCESS_WIDTH_UM)
 # Deben estar ordenadas de abajo hacia arriba:
 # (ABAJO) y1 < y2 < y3 < y4 (ARRIBA)
 
-DY = 0.05
+DY =0.03
 
 OUTPUT_Y_POSITIONS_UM = (
     -4.65 +DY,
@@ -186,6 +179,28 @@ sim = build_mmi_1x4_fdtd_simulation(
 
     run_time_s=5e-12,
 )
+
+print("\n--- MATERIAL CHECK ---")
+
+print(
+    "Background medium:"
+)
+
+print(
+    sim.medium
+)
+
+print(
+    "\nStructure media:"
+)
+
+for structure in sim.structures:
+
+    print(
+        structure.name,
+        structure.medium,
+    )
+
 
 
 sim.validate_pre_upload()
