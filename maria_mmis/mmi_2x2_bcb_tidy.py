@@ -29,7 +29,7 @@ ESTIMATE_TIDY3D_COST = False
 LOAD_TIDY3D_DATA = False
 
 
-TIDY3D_TASK_NAME = "mmi_2x2_W10_Lememinus1.6_dy0.14_wt2.7"
+TIDY3D_TASK_NAME = "mmi_2x2_W10_Lememinus1.8_dy0.14_wt2.6"
 
 
 # Archivo local donde se guardaran los resultados
@@ -45,10 +45,10 @@ BCB_HEIGHT_UM = 0.4
 
 # Resultado optimizado con EME + Tidy mode solver
 
-MMI_LENGTH_UM = 76.4844 -1.65
+MMI_LENGTH_UM = 76.5215 -1.7
 ACCESS_WIDTH_UM = 1
 
-DY_UM = 0.14
+DY_UM = 0.18
 #0.12
 
 # +/- (Wmmi/6 + dy)
@@ -58,7 +58,7 @@ IO_Y_POSITION_UM = (MMI_WIDTH_UM / 6.0+ DY_UM)
 STRAIGHT_IO_LENGTH_UM = 2
 
 # Longitud del taper
-TAPER_LENGTH_UM = 45.0
+TAPER_LENGTH_UM = 30.0
 
 # Longitud total a cada lado del MMI
 IO_LENGTH_UM = STRAIGHT_IO_LENGTH_UM + TAPER_LENGTH_UM
@@ -67,7 +67,7 @@ IO_LENGTH_UM = STRAIGHT_IO_LENGTH_UM + TAPER_LENGTH_UM
 # SIN TAPER:
 # la anchura final del supuesto taper es igual
 # a la anchura de la guia de acceso.
-TAPER_WIDTH_UM = 2.7
+TAPER_WIDTH_UM = 2.6
 
 INPUT_PORT = "bottom"
 

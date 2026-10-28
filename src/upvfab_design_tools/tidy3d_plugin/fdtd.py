@@ -14,6 +14,7 @@ from .conversion import material_to_tidy3d_medium
 
 
 InputPort = Literal["top", "bottom"]
+MMI3x3Input = Literal["top", "bottom", "hybrid"]
 FDTDFieldComponent = Literal["Ex", "Ey", "Ez", "Hx", "Hy", "Hz"]
 FDTDFieldPart = Literal["real", "mag", "phase", "intensity"]
 
@@ -462,6 +463,77 @@ def mmi_1x4_vertices(
             (x_right, y + 0.5 * w_wg),
             (x_taper_right, y + 0.5 * w_wg),
             (x1, y + 0.5 * w_taper),
+        )
+
+    return polygons
+
+def mmi_3x3_vertices(
+    *,
+    length_um: float,
+    io_length_um: float,
+    port_position_um: float,
+    access_width_um: float,
+    taper_width_um: float,
+    mmi_width_um: float,
+    straight_io_length_um: float = 0.0,
+) -> dict[str, tuple[tuple[float, float], ...]]:
+    """Return polygons for a symmetric 3x3 MMI."""
+
+    _validate_positive("length_um", length_um)
+    _validate_positive("io_length_um", io_length_um)
+    _validate_positive("port_position_um", port_position_um)
+    _validate_positive("access_width_um", access_width_um)
+    _validate_positive("taper_width_um", taper_width_um)
+    _validate_positive("mmi_width_um", mmi_width_um)
+
+    if straight_io_length_um < 0 or straight_io_length_um >= io_length_um:
+        raise ValueError(
+            "straight_io_length_um must satisfy "
+            "0 <= straight_io_length_um < io_length_um."
+        )
+
+    x0 = -0.5 * length_um
+    x1 = +0.5 * length_um
+    x_left = x0 - io_length_um
+    x_right = x1 + io_length_um
+    x_taper_left = x_left + straight_io_length_um
+    x_taper_right = x_right - straight_io_length_um
+
+    w = access_width_um
+    wt = taper_width_um
+
+    polygons = {
+        "mmi": (
+            (x0, -0.5 * mmi_width_um),
+            (x1, -0.5 * mmi_width_um),
+            (x1, +0.5 * mmi_width_um),
+            (x0, +0.5 * mmi_width_um),
+        )
+    }
+
+    ports = (
+        ("bottom", -port_position_um),
+        ("center", 0.0),
+        ("top", +port_position_um),
+    )
+
+    for name, y in ports:
+        polygons[f"in_{name}"] = (
+            (x_left, y - w / 2),
+            (x_taper_left, y - w / 2),
+            (x0, y - wt / 2),
+            (x0, y + wt / 2),
+            (x_taper_left, y + w / 2),
+            (x_left, y + w / 2),
+        )
+
+        polygons[f"out_{name}"] = (
+            (x1, y - wt / 2),
+            (x_taper_right, y - w / 2),
+            (x_right, y - w / 2),
+            (x_right, y + w / 2),
+            (x_taper_right, y + w / 2),
+            (x1, y + wt / 2),
         )
 
     return polygons
@@ -1086,6 +1158,82 @@ def build_mmi_1x4_fdtd_simulation(
         core_name=core_name,
     )
 
+def build_mmi_3x3_fdtd_simulation(
+    *,
+    polygons: Mapping[str, tuple[tuple[float, float], ...]],
+    cross_section: CrossSection,
+    wavelength_um: float,
+    port_position_um: float,
+    access_width_um: float,
+    input_configuration: MMI3x3Input = "hybrid",
+    delta_phi_rad: float = 0.0,
+    bandwidth_um: float = 0.1,
+    pad_x_um: float = 2.0,
+    pad_y_um: float = 2.0,
+    pad_z_um: float = 1.0,
+    source_offset_um: float = 1.0,
+    monitor_offset_um: float = 1.0,
+    mode_plane_y_span_um: float | None = None,
+    mode_plane_z_span_um: float | None = None,
+    field_monitor_z_um: float | None = None,
+    min_steps_per_wvl: int = 20,
+    run_time_s: float = 2e-12,
+    core_name: str | None = "core",
+):
+    """Build a Tidy3D FDTD simulation for a 3x3 MMI."""
+
+    td = _import_tidy3d()
+
+    center, size = fdtd_simulation_bounds(
+        polygons,
+        cross_section,
+        pad_x_um=pad_x_um,
+        pad_y_um=pad_y_um,
+        pad_z_um=pad_z_um,
+    )
+
+    structures = fdtd_tidy3d_structures(
+        polygons,
+        cross_section,
+        wavelength_um=wavelength_um,
+        simulation_center=center,
+        simulation_size=size,
+        core_name=core_name,
+    )
+
+    sources, monitors = mmi_3x3_sources_and_monitors(
+        polygons=polygons,
+        cross_section=cross_section,
+        wavelength_um=wavelength_um,
+        port_position_um=port_position_um,
+        access_width_um=access_width_um,
+        input_configuration=input_configuration,
+        delta_phi_rad=delta_phi_rad,
+        bandwidth_um=bandwidth_um,
+        source_offset_um=source_offset_um,
+        monitor_offset_um=monitor_offset_um,
+        mode_plane_y_span_um=mode_plane_y_span_um,
+        mode_plane_z_span_um=mode_plane_z_span_um,
+        field_monitor_z_um=field_monitor_z_um,
+    )
+
+    return td.Simulation(
+        center=center,
+        size=size,
+        medium=material_to_tidy3d_medium(
+            cross_section.background_material,
+            wavelength_um=wavelength_um,
+        ),
+        structures=structures,
+        sources=sources,
+        monitors=monitors,
+        run_time=run_time_s,
+        grid_spec=td.GridSpec.auto(
+            wavelength=wavelength_um,
+            min_steps_per_wvl=min_steps_per_wvl,
+        ),
+        boundary_spec=td.BoundarySpec.all_sides(boundary=td.PML()),
+    )
 
 def build_taper_fdtd_simulation(
     *,
@@ -1619,6 +1767,132 @@ def mmi_1x4_sources_and_monitors(
             field_monitor,
         ),
     )
+
+def mmi_3x3_sources_and_monitors(
+    *,
+    polygons: Mapping[str, tuple[tuple[float, float], ...]],
+    cross_section: CrossSection,
+    wavelength_um: float,
+    port_position_um: float,
+    access_width_um: float,
+    input_configuration: MMI3x3Input = "hybrid",
+    delta_phi_rad: float = 0.0,
+    bandwidth_um: float = 0.1,
+    source_offset_um: float = 1.0,
+    monitor_offset_um: float = 1.0,
+    mode_plane_y_span_um: float | None = None,
+    mode_plane_z_span_um: float | None = None,
+    field_monitor_z_um: float | None = None,
+    field_monitor_name: str = "field_core",
+):
+    """Create sources and monitors for a 3x3 MMI."""
+
+    if input_configuration not in ("top", "bottom", "hybrid"):
+        raise ValueError(
+            "input_configuration must be 'top', 'bottom' or 'hybrid'."
+        )
+
+    td = _import_tidy3d()
+
+    freq0 = td.C_0 / wavelength_um
+    fwidth = td.C_0 / wavelength_um**2 * bandwidth_um
+    mode_spec = td.ModeSpec(num_modes=1)
+
+    x_min, x_max = _polygon_x_bounds(polygons)
+    x_source = x_min + source_offset_um
+    x_monitor = x_max - monitor_offset_um
+
+    z_center = 0.5 * (cross_section.z_min + cross_section.z_max)
+    y_span = mode_plane_y_span_um or 2.5 * access_width_um
+    z_span = mode_plane_z_span_um or cross_section.z_span
+    plane_size = (0.0, y_span, z_span)
+
+    source_amp = 1 / np.sqrt(2) if input_configuration == "hybrid" else 1.0
+    sources = []
+
+    if input_configuration in ("top", "hybrid"):
+        sources.append(
+            td.ModeSource(
+                center=(x_source, +port_position_um, z_center),
+                size=plane_size,
+                source_time=td.GaussianPulse(
+                    freq0=freq0,
+                    fwidth=fwidth,
+                    amplitude=source_amp,
+                    phase=0.0,
+                ),
+                direction="+",
+                mode_spec=mode_spec,
+                mode_index=0,
+                name="source_top",
+            )
+        )
+
+    if input_configuration in ("bottom", "hybrid"):
+        sources.append(
+            td.ModeSource(
+                center=(x_source, -port_position_um, z_center),
+                size=plane_size,
+                source_time=td.GaussianPulse(
+                    freq0=freq0,
+                    fwidth=fwidth,
+                    amplitude=source_amp,
+                    phase=delta_phi_rad if input_configuration == "hybrid" else 0.0,
+                ),
+                direction="+",
+                mode_spec=mode_spec,
+                mode_index=0,
+                name="source_bottom",
+            )
+        )
+
+    monitors = []
+
+    for name, y in (
+        ("bottom", -port_position_um),
+        ("center", 0.0),
+        ("top", +port_position_um),
+    ):
+        monitors.extend(
+            [
+                td.FluxMonitor(
+                    center=(x_monitor, y, z_center),
+                    size=plane_size,
+                    freqs=[freq0],
+                    name=f"flux_{name}",
+                ),
+                td.ModeMonitor(
+                    center=(x_monitor, y, z_center),
+                    size=plane_size,
+                    freqs=[freq0],
+                    mode_spec=mode_spec,
+                    name=f"mode_{name}",
+                ),
+            ]
+        )
+
+    field_center, field_size = fdtd_simulation_bounds(
+        polygons,
+        cross_section,
+        pad_x_um=0.0,
+        pad_y_um=0.0,
+        pad_z_um=0.0,
+    )
+
+    if field_monitor_z_um is None:
+        core_layer, _ = extract_fdtd_layers(cross_section)
+        field_monitor_z_um = core_layer.z_center
+
+    monitors.append(
+        td.FieldMonitor(
+            center=(field_center[0], field_center[1], field_monitor_z_um),
+            size=(field_size[0], field_size[1], 0.0),
+            freqs=[freq0],
+            name=field_monitor_name,
+        )
+    )
+
+    return tuple(sources), tuple(monitors)
 
 def taper_sources_and_monitors(
     *,
