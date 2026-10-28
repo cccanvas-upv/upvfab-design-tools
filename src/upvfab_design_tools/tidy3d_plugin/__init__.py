@@ -13,6 +13,7 @@ from typing import Any
 _EXPORT_MODULES = {
     "TIDY3D_API_KEY_ENV_VAR": ".config",
     "build_mmi_2x2_fdtd_simulation": ".fdtd",
+    "build_mmi_2x2_asymmetric_fdtd_simulation": ".fdtd",
     "build_taper_fdtd_simulation": ".fdtd",
     "cross_section_to_tidy3d_simulation": ".conversion",
     "estimate_tidy3d_cost": ".config",
@@ -25,6 +26,7 @@ _EXPORT_MODULES = {
     "mmi_2x2_sources_and_monitors": ".fdtd",
     "fdtd_tidy3d_structures": ".fdtd",
     "mmi_2x2_vertices": ".fdtd",
+    "mmi_2x2_asymmetric_vertices": ".fdtd",
     "mmi_1x2_vertices": ".fdtd" ,
     "mmi_1x4_vertices": ".fdtd",
     "mmi_3x3_vertices": ".fdtd",

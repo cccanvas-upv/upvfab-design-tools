@@ -538,6 +538,68 @@ def mmi_3x3_vertices(
 
     return polygons
 
+def mmi_2x2_asymmetric_vertices(
+    *,
+    length_um: float,
+    io_length_um: float,
+    straight_io_length_um: float,
+    input_y_positions_um: tuple[float, float],
+    output_y_positions_um: tuple[float, float],
+    access_width_um: float,
+    taper_width_um: float,
+    mmi_width_um: float,
+) -> dict[str, tuple[tuple[float, float], ...]]:
+
+    x0 = -0.5 * length_um
+    x1 = +0.5 * length_um
+    x_left = x0 - io_length_um
+    x_right = x1 + io_length_um
+
+    x_taper_left = x_left + straight_io_length_um
+    x_taper_right = x_right - straight_io_length_um
+
+    w = access_width_um
+    wt = taper_width_um
+
+    polygons = {
+        "mmi": (
+            (x0, -mmi_width_um / 2),
+            (x1, -mmi_width_um / 2),
+            (x1, +mmi_width_um / 2),
+            (x0, +mmi_width_um / 2),
+        )
+    }
+
+    for name, y in zip(
+        ("bottom", "top"),
+        input_y_positions_um,
+        strict=True,
+    ):
+        polygons[f"in_{name}"] = (
+            (x_left, y - w / 2),
+            (x_taper_left, y - w / 2),
+            (x0, y - wt / 2),
+            (x0, y + wt / 2),
+            (x_taper_left, y + w / 2),
+            (x_left, y + w / 2),
+        )
+
+    for name, y in zip(
+        ("bottom", "top"),
+        output_y_positions_um,
+        strict=True,
+    ):
+        polygons[f"out_{name}"] = (
+            (x1, y - wt / 2),
+            (x_taper_right, y - w / 2),
+            (x_right, y - w / 2),
+            (x_right, y + w / 2),
+            (x_taper_right, y + w / 2),
+            (x1, y + wt / 2),
+        )
+
+    return polygons
+
 
 
 def taper_vertices(
@@ -1235,6 +1297,82 @@ def build_mmi_3x3_fdtd_simulation(
         boundary_spec=td.BoundarySpec.all_sides(boundary=td.PML()),
     )
 
+def build_mmi_2x2_asymmetric_fdtd_simulation(
+    *,
+    polygons,
+    cross_section,
+    wavelength_um: float,
+    input_y_positions_um: tuple[float, float],
+    output_y_positions_um: tuple[float, float],
+    access_width_um: float,
+    input_port: InputPort = "bottom",
+    bandwidth_um: float = 0.1,
+    pad_x_um: float = 2.0,
+    pad_y_um: float = 2.0,
+    pad_z_um: float = 0.0,
+    source_offset_um: float = 1.0,
+    monitor_offset_um: float = 1.0,
+    mode_plane_y_span_um: float | None = None,
+    mode_plane_z_span_um: float | None = None,
+    min_steps_per_wvl: int = 16,
+    run_time_s: float = 5e-12,
+    core_name: str | None = "core",
+):
+
+    td = _import_tidy3d()
+
+    center, size = fdtd_simulation_bounds(
+        polygons,
+        cross_section,
+        pad_x_um=pad_x_um,
+        pad_y_um=pad_y_um,
+        pad_z_um=pad_z_um,
+    )
+
+    structures = fdtd_tidy3d_structures(
+        polygons,
+        cross_section,
+        wavelength_um=wavelength_um,
+        simulation_center=center,
+        simulation_size=size,
+        core_name=core_name,
+    )
+
+    sources, monitors = mmi_2x2_asymmetric_sources_and_monitors(
+        polygons=polygons,
+        cross_section=cross_section,
+        wavelength_um=wavelength_um,
+        input_y_positions_um=input_y_positions_um,
+        output_y_positions_um=output_y_positions_um,
+        access_width_um=access_width_um,
+        input_port=input_port,
+        bandwidth_um=bandwidth_um,
+        source_offset_um=source_offset_um,
+        monitor_offset_um=monitor_offset_um,
+        mode_plane_y_span_um=mode_plane_y_span_um,
+        mode_plane_z_span_um=mode_plane_z_span_um,
+    )
+
+    return td.Simulation(
+        center=center,
+        size=size,
+        medium=material_to_tidy3d_medium(
+            cross_section.background_material,
+            wavelength_um=wavelength_um,
+        ),
+        structures=structures,
+        sources=sources,
+        monitors=monitors,
+        run_time=run_time_s,
+        grid_spec=td.GridSpec.auto(
+            wavelength=wavelength_um,
+            min_steps_per_wvl=min_steps_per_wvl,
+        ),
+        boundary_spec=td.BoundarySpec.all_sides(
+            boundary=td.PML()
+        ),
+    )
+
 def build_taper_fdtd_simulation(
     *,
     input_cross_section: CrossSection,
@@ -1893,6 +2031,104 @@ def mmi_3x3_sources_and_monitors(
     )
 
     return tuple(sources), tuple(monitors)
+
+def mmi_2x2_asymmetric_sources_and_monitors(
+    *,
+    polygons,
+    cross_section,
+    wavelength_um: float,
+    input_y_positions_um: tuple[float, float],
+    output_y_positions_um: tuple[float, float],
+    access_width_um: float,
+    input_port: InputPort = "bottom",
+    bandwidth_um: float = 0.1,
+    source_offset_um: float = 1.0,
+    monitor_offset_um: float = 1.0,
+    mode_plane_y_span_um: float | None = None,
+    mode_plane_z_span_um: float | None = None,
+    field_monitor_z_um: float | None = None,
+):
+
+    if input_port not in ("bottom", "top"):
+        raise ValueError("input_port must be 'bottom' or 'top'.")
+
+    td = _import_tidy3d()
+
+    freq0 = td.C_0 / wavelength_um
+    fwidth = td.C_0 / wavelength_um**2 * bandwidth_um
+
+    x_min, x_max = _polygon_x_bounds(polygons)
+    x_source = x_min + source_offset_um
+    x_monitor = x_max - monitor_offset_um
+
+    z_center = 0.5 * (cross_section.z_min + cross_section.z_max)
+    y_span = mode_plane_y_span_um or 2.5 * access_width_um
+    z_span = mode_plane_z_span_um or cross_section.z_span
+
+    plane_size = (0.0, y_span, z_span)
+    mode_spec = td.ModeSpec(num_modes=1)
+
+    input_index = 0 if input_port == "bottom" else 1
+    y_source = input_y_positions_um[input_index]
+
+    source = td.ModeSource(
+        center=(x_source, y_source, z_center),
+        size=plane_size,
+        source_time=td.GaussianPulse(
+            freq0=freq0,
+            fwidth=fwidth,
+        ),
+        direction="+",
+        mode_spec=mode_spec,
+        mode_index=0,
+        name=f"source_{input_port}",
+    )
+
+    monitors = []
+
+    for name, y in zip(
+        ("bottom", "top"),
+        output_y_positions_um,
+        strict=True,
+    ):
+        monitors.extend([
+            td.FluxMonitor(
+                center=(x_monitor, y, z_center),
+                size=plane_size,
+                freqs=[freq0],
+                name=f"flux_{name}",
+            ),
+            td.ModeMonitor(
+                center=(x_monitor, y, z_center),
+                size=plane_size,
+                freqs=[freq0],
+                mode_spec=mode_spec,
+                name=f"mode_{name}",
+            ),
+        ])
+
+    field_center, field_size = fdtd_simulation_bounds(
+        polygons,
+        cross_section,
+        pad_x_um=0.0,
+        pad_y_um=0.0,
+        pad_z_um=0.0,
+    )
+
+    if field_monitor_z_um is None:
+        core, _ = extract_fdtd_layers(cross_section)
+        field_monitor_z_um = core.z_center
+
+    monitors.append(
+        td.FieldMonitor(
+            center=(field_center[0], field_center[1], field_monitor_z_um),
+            size=(field_size[0], field_size[1], 0.0),
+            freqs=[freq0],
+            name="field_core",
+        )
+    )
+
+    return (source,), tuple(monitors)
 
 def taper_sources_and_monitors(
     *,

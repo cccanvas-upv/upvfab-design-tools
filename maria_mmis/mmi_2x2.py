@@ -35,24 +35,25 @@ MODE_SOLVER_BACKEND: Literal["femwell", "tidy"] = "tidy"
 WAVELENGTH_UM = 1.55
 CORE_HEIGHT_UM = 0.3
 
-MMI_WIDTH_UM = 8
+MMI_WIDTH_UM = 10
 
 # Anchura nominal + incremento
 ACCESS_WIDTH_BASE_UM = 1.4
 ACCESS_WIDTH_INCREMENT_UM = 0
 ACCESS_WIDTH_UM = ACCESS_WIDTH_BASE_UM + ACCESS_WIDTH_INCREMENT_UM
 
-# Incremento respecto a Lpi / 2
-MMI_LENGTH_INCREMENT_UM = -3.5
+# Incremento respecto a LMMI
+MMI_LENGTH_INCREMENT_UM = 0
 
-ACCESS_OFFSET_UM = MMI_WIDTH_UM / 6.0
+ACCESS_OFFSET_UM_DOWN =  MMI_WIDTH_UM / 5.0
+ACCESS_OFFSET_UM_UP = 2* MMI_WIDTH_UM / 5.0
 
 # Variación de la posición de los accesos
 DY = 0
 
 ACCESS_X_POSITIONS_UM = (
-    -ACCESS_OFFSET_UM - DY,
-    +ACCESS_OFFSET_UM + DY,
+    -ACCESS_OFFSET_UM_DOWN - DY,
+    +ACCESS_OFFSET_UM_UP + DY,
 )
 
 INPUT_X_POSITION_UM = ACCESS_X_POSITIONS_UM[0]
@@ -242,21 +243,18 @@ mmi_result = solver.solve(
 mmi_result = te_mode_result(mmi_result)
 
 
-# DIAGNOSTICO Lpi
+########################################################################### DIAGNOSTICO Lpi ##########################################################################################
 
 lpi_um = lpi_from_first_two_modes(mmi_result)
 
-MMI_LENGTH_BASE_UM = lpi_um / 2
+MMI_LENGTH_BASE_UM = 3*lpi_um/5
 MMI_LENGTH_UM = MMI_LENGTH_BASE_UM + MMI_LENGTH_INCREMENT_UM
 
+#######################################################################################################################################################################################
 
 # PERFILES TRANSVERSALES
 
-x_um = np.linspace(
-    -0.5 * DOMAIN_X_SPAN_UM,
-    +0.5 * DOMAIN_X_SPAN_UM,
-    NUM_X_POINTS,
-)
+x_um = np.linspace(-0.5 * DOMAIN_X_SPAN_UM, +0.5 * DOMAIN_X_SPAN_UM, NUM_X_POINTS )
 
 
 centered_access_profile = sample_mode_profile(
@@ -268,53 +266,22 @@ centered_access_profile = sample_mode_profile(
 
 
 # Entrada
-input_profile = shift_profile(
-    centered_access_profile,
-    x_um,
-    shift_um=INPUT_X_POSITION_UM,
-)
-
+input_profile = shift_profile(centered_access_profile,x_um,shift_um=INPUT_X_POSITION_UM,)
 
 # Dos perfiles de acceso de salida
-output_profiles = [
-    shift_profile(
-        centered_access_profile,
-        x_um,
-        shift_um=x_position_um,
-    )
-    for x_position_um in ACCESS_X_POSITIONS_UM
-]
+output_profiles = [shift_profile(centered_access_profile, x_um, shift_um=x_position_um)
+    for x_position_um in ACCESS_X_POSITIONS_UM]
 
 
 # MODOS DEL MMI
+mmi_profiles = sample_mode_profiles(mmi_result,x_um=x_um, z_um=FIELD_CUT_Z_UM, field_component="Ex")
 
-mmi_profiles = sample_mode_profiles(
-    mmi_result,
-    x_um=x_um,
-    z_um=FIELD_CUT_Z_UM,
-    field_component="Ex",
-)
-
-mmi_profiles = normalize_profiles(
-    mmi_profiles,
-    x_um,
-)
+mmi_profiles = normalize_profiles(mmi_profiles, x_um)
 
 
 # EXCITACION DEL MMI
-
-initial_amplitudes = modal_excitation_coefficients(
-    input_profile,
-    mmi_profiles,
-    x_um,
-)
-
-
-represented_input_power = float(
-    np.sum(
-        np.abs(initial_amplitudes) ** 2
-    )
-)
+initial_amplitudes = modal_excitation_coefficients(input_profile, mmi_profiles, x_um)
+represented_input_power = float(np.sum(np.abs(initial_amplitudes) ** 2))
 
 
 # PROPAGACION
@@ -326,14 +293,10 @@ propagation = propagate_modes(
     dz_um=DZ_UM,
 )
 
-
-final_field = propagation.reconstruct_field(
-    mmi_profiles
-)[-1]
+final_field = propagation.reconstruct_field(mmi_profiles)[-1]
 
 
 # PROYECCION SOBRE LOS DOS PUERTOS
-
 output_amplitudes = np.array(
     [
         scalar_projection(
@@ -347,64 +310,33 @@ output_amplitudes = np.array(
 )
 
 
-output_powers = np.abs(
-    output_amplitudes
-) ** 2
+output_powers = np.abs(output_amplitudes) ** 2
 
+transmissions = (output_powers/ represented_input_power)
 
-transmissions = (
-    output_powers
-    / represented_input_power
-)
-
-
-collected_output_transmission = float(
-    np.sum(transmissions)
-)
-
+collected_output_transmission = float(np.sum(transmissions))
 
 if collected_output_transmission > 0:
 
-    split_fractions = (
-        transmissions
-        / collected_output_transmission
-    )
+    split_fractions = (transmissions/ collected_output_transmission )
 
 else:
 
-    split_fractions = np.zeros_like(
-        transmissions
-    )
+    split_fractions = np.zeros_like(transmissions)
 
-
-# METRICAS EQUIVALENTES A LA TABLA
-
+# METRICAS 
 total_power_in_coupled = represented_input_power
-
 power_over_outputs = output_powers.copy()
-
-total_out_power = float(
-    np.sum(power_over_outputs)
-)
-
+total_out_power = float(np.sum(power_over_outputs))
 
 if total_out_power > 0:
 
-    ratio_over_outputs = (
-        power_over_outputs
-        / total_out_power
-    )
-
-    excess_loss_db = (
-        -10.0 * np.log10(total_out_power)
-    )
+    ratio_over_outputs = (power_over_outputs/ total_out_power)
+    excess_loss_db = (-10.0 * np.log10(total_out_power))
 
 else:
 
-    ratio_over_outputs = np.zeros_like(
-        power_over_outputs
-    )
-
+    ratio_over_outputs = np.zeros_like(power_over_outputs)
     excess_loss_db = np.inf
 
 
@@ -414,14 +346,8 @@ fig, ax = plot_propagation(
     propagation,
     x_um=x_um,
     field_profiles=mmi_profiles,
-    xlim=(
-        -0.5 * DOMAIN_X_SPAN_UM,
-        +0.5 * DOMAIN_X_SPAN_UM,
-    ),
-    zlim=(
-        0.0,
-        MMI_LENGTH_UM,
-    ),
+    xlim=(-0.5 * DOMAIN_X_SPAN_UM, +0.5 * DOMAIN_X_SPAN_UM,),
+    zlim=(0.0,MMI_LENGTH_UM ),
 )
 
 
