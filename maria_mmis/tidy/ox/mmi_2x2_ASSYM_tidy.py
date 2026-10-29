@@ -23,7 +23,7 @@ RUN_TIDY3D_CLOUD = True
 ESTIMATE_TIDY3D_COST = False
 LOAD_TIDY3D_DATA = False
 
-TIDY3D_TASK_NAME = "mmi72_L02minus1.75_dy0_wt2.8"
+TIDY3D_TASK_NAME = "mmi72_L02minus1.8_dyminus0.05_wt2.8"
 TIDY3D_DATA_PATH = f"data/{TIDY3D_TASK_NAME}.hdf5"
 
 
@@ -37,7 +37,7 @@ CORE_HEIGHT_UM = 0.30
 MMI_WIDTH_UM = 10.0
 
 # Sustituir por el valor optimizado del EME
-MMI_LENGTH_UM = 88.7813 - 1.75
+MMI_LENGTH_UM = 88.7813 - 1.8
 
 
 ACCESS_WIDTH_UM = 1
@@ -47,7 +47,7 @@ STRAIGHT_IO_LENGTH_UM = 2.0
 TAPER_LENGTH_UM = 50.0
 IO_LENGTH_UM = STRAIGHT_IO_LENGTH_UM + TAPER_LENGTH_UM
 
-DY_UM = 0.0
+DY_UM = -0.05
 
 
 # ============================================================
