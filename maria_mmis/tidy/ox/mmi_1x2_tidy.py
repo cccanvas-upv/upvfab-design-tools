@@ -29,13 +29,10 @@ LOAD_TIDY3D_DATA = False
 TIDY3D_TASK_NAME = "mmi_1x2_dy0.05_dLminus1_wt1.4_elipso"
 
 
-
 # Archivo local donde se guardaran los resultados
 TIDY3D_DATA_PATH = f"data/{TIDY3D_TASK_NAME}.hdf5"
 
-
 # PARAMETROS DISPOSITIVO
-
 WAVELENGTH_UM = 1.55
 CORE_HEIGHT_UM = 0.3
 MMI_WIDTH_UM = 8.0
@@ -52,28 +49,20 @@ DY_UM = 0.05
 INPUT_Y_POSITION_UM = 0.0
 
 # Dos salidas simétricas
-OUTPUT_Y_POSITION_UM = (
-    MMI_WIDTH_UM / 3.85 + DY_UM
-)
-
+OUTPUT_Y_POSITION_UM = (MMI_WIDTH_UM / 3.85 + DY_UM)
 
 # Longitud del tramo recto de acceso
 STRAIGHT_IO_LENGTH_UM = 2.0
 
-# Longitud del taper
+
 TAPER_LENGTH_UM = 15.0
 
-# Longitud total a cada lado del MMI
 IO_LENGTH_UM = STRAIGHT_IO_LENGTH_UM + TAPER_LENGTH_UM
 
-
-# SIN TAPER:
-# la anchura final del supuesto taper es igual
-# a la anchura de la guia de acceso.
 TAPER_WIDTH_UM = 1.4
 
 
-# Source y monitors en el centro de la guia recta de 4 um
+# Source y monitors en el centro de la guia recta 
 SOURCE_OFFSET_UM = (0.5 * STRAIGHT_IO_LENGTH_UM)
 MONITOR_OFFSET_UM = (0.5 * STRAIGHT_IO_LENGTH_UM)
 
@@ -105,26 +94,18 @@ cross_section = strip_waveguide(
 
 
 # COMPROBAR STACK
+core, surrounding = extract_fdtd_layers(cross_section)
 
-core, surrounding = extract_fdtd_layers(
-    cross_section
-)
-
-print(
-    "FDTD stack core:",
+print("FDTD stack core:",
     core.name,
     f"z=[{core.z_min:.3f}, "
     f"{core.z_max:.3f}] um",
-    core.material_name,
-)
+    core.material_name)
 
-print(
-    "FDTD surrounding layers:",
-    [
-        layer.name
-        for layer in surrounding
-    ],
-)
+print("FDTD surrounding layers:",
+    [layer.name
+     for layer in surrounding])
+
 
 
 # GEOMETRIA 1x2 SIN TAPERS
@@ -164,234 +145,123 @@ sim = build_mmi_1x2_fdtd_simulation(
     run_time_s=5e-12,
 )
 
+print("\nSimulation validated successfully.")
+
 print("\n--- MATERIAL CHECK ---")
 
-print(
-    "Background medium:"
-)
-
-print(
-    sim.medium
-)
-
-print(
-    "\nStructure media:"
-)
+print("Background medium:")
+print(sim.medium)
+print("\nStructure media:")
 
 for structure in sim.structures:
-
-    print(
-        structure.name,
-        structure.medium,
-    )
-
+    print(structure.name,structure.medium)
 
 # VALIDACION LOCAL
+
+sim.validate_pre_upload()
 
 sim.validate_pre_upload()
 
 if ESTIMATE_TIDY3D_COST:
     test_tidy3d_api()
 
-    estimated_cost = estimate_tidy3d_cost(
-        sim,
-        task_name=f"{TIDY3D_TASK_NAME}_cost",
-        verbose=True,
-    )
-
-    print(
-        f"\nEstimated Tidy3D cost: "
-        f"{estimated_cost:.6g} FlexCredits"
-    )
+    estimated_cost = estimate_tidy3d_cost(sim, task_name="mmi_2x2_no_tapers_cost", verbose=True)
+    print(f"\nEstimated Tidy3D cost: "
+        f"{estimated_cost:.6g} FlexCredits")
 
 print("\nSimulation validated successfully.")
-
-
 # PARAMETROS
-
 print("\n" + "=" * 60)
-print("FDTD MMI 1x2 - LOCAL GEOMETRY CHECK")
+print("FDTD MMI 2x2 - LOCAL GEOMETRY CHECK")
 print("=" * 60)
 
-print(
-    f"Wavelength: "
-    f"{WAVELENGTH_UM:.4f} um"
-)
+print(f"Wavelength: "
+    f"{WAVELENGTH_UM:.4f} um")
+print(f"MMI width: "
+    f"{MMI_WIDTH_UM:.4f} um")
+print( f"MMI length: "
+    f"{MMI_LENGTH_UM:.4f} um")
+print(f"Access width: "
+    f"{ACCESS_WIDTH_UM:.4f} um")
+print(f"dy: "
+    f"{DY_UM:+.4f} um")
 
-print(
-    f"MMI width: "
-    f"{MMI_WIDTH_UM:.4f} um"
-)
+print(f"Input position: "
+    f"{INPUT_Y_POSITION_UM:+.4f} um")
+print(f"Output positions: "
+    f"+/- {OUTPUT_Y_POSITION_UM:.6f} um")
+print(f"Taper width: "
+    f"{TAPER_WIDTH_UM:.4f} um")
+print(f"Taper length: "
+    f"{TAPER_LENGTH_UM:.4f} um")
 
-print(
-    f"MMI length: "
-    f"{MMI_LENGTH_UM:.4f} um"
-)
-
-print(
-    f"Access width: "
-    f"{ACCESS_WIDTH_UM:.4f} um"
-)
-
-print(
-    f"dy: "
-    f"{DY_UM:+.4f} um"
-)
-
-print(
-    f"Input position: "
-    f"{INPUT_Y_POSITION_UM:+.4f} um"
-)
-
-print(
-    f"Output positions: "
-    f"+/- {OUTPUT_Y_POSITION_UM:.6f} um"
-)
-
-print(
-    f"Taper width: "
-    f"{TAPER_WIDTH_UM:.4f} um"
-)
-
-print(
-    f"Taper length: "
-    f"{TAPER_LENGTH_UM:.4f} um"
-)
-
-print(
-    f"Straight IO length: "
-    f"{STRAIGHT_IO_LENGTH_UM:.4f} um"
-)
-
+print(f"Straight IO length: "
+    f"{STRAIGHT_IO_LENGTH_UM:.4f} um")
 print("=" * 60)
-
 
 # INFORMACION DE LA SIMULACION
 
-print(
-    f"\nSimulation center: "
-    f"{sim.center}"
-)
+print( f"\nSimulation center: "
+    f"{sim.center}")
 
-print(
-    f"Simulation size: "
-    f"{sim.size}"
-)
+print(f"Simulation size: "
+    f"{sim.size}")
 
-print(
-    "Structures:",
-    [
-        structure.name
-        for structure in sim.structures
-    ],
-)
+print("Structures:",
+    [structure.name
+    for structure in sim.structures])
 
 print(
     "Sources:",
-    [
-        source.name
-        for source in sim.sources
-    ],
-)
+    [source.name
+     for source in sim.sources])
 
-print(
-    "Monitors:",
-    [
-        monitor.name
-        for monitor in sim.monitors
-    ],
-)
+print("Monitors:",
+    [monitor.name
+    for monitor in sim.monitors])
 
 if len(sim.sources) > 0:
 
-    print(
-        f"Source center: "
-        f"{sim.sources[0].center}"
-    )
+    print(f"Source center: "
+        f"{sim.sources[0].center}")
 
-    print(
-        f"Source size: "
-        f"{sim.sources[0].size}"
-    )
-
+    print(f"Source size: "
+        f"{sim.sources[0].size}")
 
 # REPRESENTAR POLIGONOS
-
-fig_vertices, ax_vertices = (
-    plot_mmi_2x2_vertices(
-        polygons
-    )
-)
-
-ax_vertices.set_title(
-    "MMI 1x2 - FDTD geometry"
-)
-
+fig_vertices, ax_vertices = (plot_mmi_2x2_vertices(polygons))
+ax_vertices.set_title("MMI 2x2")
 
 # REPRESENTAR SIMULACION TIDY3D
 
-fig_sim, ax_sim = plt.subplots(
-    figsize=(10, 4)
-)
+fig_sim, ax_sim = plt.subplots(figsize=(10, 4))
 
-sim.plot(
-    z=0.15,
-    ax=ax_sim,
-)
+sim.plot(z=0.15,ax=ax_sim,)
 
-ax_sim.set_aspect(
-    "equal",
-    adjustable="box",
-)
+ax_sim.set_aspect("equal",adjustable="box",)
 
-ax_sim.set_title(
-    "Tidy3D geometry, source and monitors"
-)
+ax_sim.set_title("Tidy3D geometry, source and monitors")
 
 
 # REPRESENTAR PERMITIVIDAD
 
-fig_eps, ax_eps = plt.subplots(
-    figsize=(10, 4)
-)
-
-sim.plot_eps(
-    z=0.15,
-    ax=ax_eps,
-)
-
-ax_eps.set_aspect(
-    "equal",
-    adjustable="box",
-)
-
-ax_eps.set_title(
-    "Tidy3D permittivity at z = 0.15 um"
-)
-
+fig_eps, ax_eps = plt.subplots( figsize=(10, 4))
+sim.plot_eps( z=0.15,ax=ax_eps)
+ax_eps.set_aspect("equal",adjustable="box",)
+ax_eps.set_title( "Tidy3D permittivity at z = 0.15 um")
 
 sim_data = None
 
 
-# ------------------------------------------------------------
 # CARGAR RESULTADOS YA EXISTENTES
-# ------------------------------------------------------------
-
 if LOAD_TIDY3D_DATA:
 
-    print(
-        f"\nLoading Tidy3D data from:"
-        f"\n{TIDY3D_DATA_PATH}"
-    )
+    print(f"\nLoading Tidy3D data from:"
+        f"\n{TIDY3D_DATA_PATH}")
 
-    sim_data = load_tidy3d_simulation_data(
-        TIDY3D_DATA_PATH
-    )
+    sim_data = load_tidy3d_simulation_data( TIDY3D_DATA_PATH)
 
-
-# ------------------------------------------------------------
 # EJECUTAR SIMULACION EN TIDY3D CLOUD
-# ------------------------------------------------------------
 
 if RUN_TIDY3D_CLOUD:
 
@@ -403,27 +273,19 @@ if RUN_TIDY3D_CLOUD:
     print("RUNNING TIDY3D CLOUD SIMULATION")
     print("=" * 60)
 
-    print(
-        f"Task name: "
-        f"{TIDY3D_TASK_NAME}"
-    )
+    print(f"Task name: "
+        f"{TIDY3D_TASK_NAME}")
 
-    print(
-        f"Data path: "
-        f"{TIDY3D_DATA_PATH}"
-    )
+    print( f"Data path: "
+        f"{TIDY3D_DATA_PATH}")
 
-    sim_data = web.run(
-        sim,
+    sim_data = web.run(sim,
         task_name=TIDY3D_TASK_NAME,
         path=TIDY3D_DATA_PATH,
         verbose=True,
     )
 
-
-# ============================================================
 # POSTPROCESADO
-# ============================================================
 
 if sim_data is not None:
 
@@ -432,77 +294,43 @@ if sim_data is not None:
     print("=" * 60)
 
     print_mmi_2x2_fluxes(sim_data)
-
-    flux_top = float(
-        np.real(
-            sim_data["flux_top"].flux.values.squeeze()
-        )
-    )
-
-    flux_bottom = float(
-        np.real(
-            sim_data["flux_bottom"].flux.values.squeeze()
-        )
-    )
+    flux_top = float(np.real(sim_data["flux_top"].flux.values.squeeze()))
+    flux_bottom = float(np.real(sim_data["flux_bottom"].flux.values.squeeze()))
 
     T_top = flux_top
     T_bottom = flux_bottom
-
     T_total = T_top + T_bottom
 
-
-    # Excess loss respecto a potencia de entrada normalizada a 1
+    # Excess loss 
     if T_total > 0.0:
         excess_loss_db = -10.0 * np.log10(T_total)
     else:
         excess_loss_db = np.inf
 
 
-    # Splitting ratio normalizado respecto a la potencia
-    # que llega a ambas salidas
+
     if T_total > 0.0:
         splitting_ratio = np.array(
-            [
-                T_top / T_total,
-                T_bottom / T_total,
-            ]
-        )
+            [T_top / T_total,
+            T_bottom / T_total])
     else:
         splitting_ratio = np.zeros(2)
 
 
     print("\n--- PERFORMANCE METRICS ---")
 
-    print(
-        f"Excess loss [dB]: "
-        f"{excess_loss_db:.4f}"
-    )
+    print(f"Excess loss [dB]: "
+        f"{excess_loss_db:.4f}")
 
-    print(
-        "Splitting ratio: "
-        f"{[f'{value:.4f}' for value in splitting_ratio]}"
-    )
+    print("Splitting ratio: "
+        f"{[f'{value:.4f}' for value in splitting_ratio]}")
 
-    print(
-        "Splitting ratio [%]: "
-        f"{[f'{100 * value:.2f}' for value in splitting_ratio]}"
-    )
+    print("Splitting ratio [%]: "
+        f"{[f'{100 * value:.2f}' for value in splitting_ratio]}")
+    
+    amp_top = complex(sim_data["mode_top"].amps.sel(direction="+", mode_index=0).isel(f=0).values.squeeze())
 
-    #FASES
-
-    amp_top = complex(
-        sim_data["mode_top"].amps
-        .sel(direction="+", mode_index=0)
-        .isel(f=0)
-        .values.squeeze()
-    )
-
-    amp_bottom = complex(
-        sim_data["mode_bottom"].amps
-        .sel(direction="+", mode_index=0)
-        .isel(f=0)
-        .values.squeeze()
-    )
+    amp_bottom = complex(sim_data["mode_bottom"].amps.sel(direction="+", mode_index=0).isel(f=0).values.squeeze())
 
     P_mode_top = np.abs(amp_top) ** 2
     P_mode_bottom = np.abs(amp_bottom) ** 2
@@ -510,24 +338,18 @@ if sim_data is not None:
     phase_bottom_rad = np.angle(amp_bottom)
     phase_top_deg = np.degrees(phase_top_rad)
     phase_bottom_deg = np.degrees(phase_bottom_rad)
-
     phase_difference_rad = np.angle(amp_top * np.conj(amp_bottom))
-
     phase_difference_deg = np.degrees(phase_difference_rad)
 
 
     print("\n--- OUTPUT PHASE (TE0) ---")
 
 
-    print(
-        f"Relative phase TOP - BOTTOM [deg]: "
-        f"{phase_difference_deg:+.4f}"
-    )
+    print(f"Relative phase TOP - BOTTOM [deg]: "
+        f"{phase_difference_deg:+.4f}")
 
-    print(
-        f"Relative phase TOP - BOTTOM [rad]: "
-        f"{phase_difference_rad:+.6f}"
-    )
+    print(f"Relative phase TOP - BOTTOM [rad]: "
+        f"{phase_difference_rad:+.6f}")
 
     fig_field, ax_field = plot_fdtd_field_xy(
         sim_data,
@@ -537,9 +359,6 @@ if sim_data is not None:
         polygons=polygons,
     )
 
-    ax_field.set_title(
-        f"FDTD |Ey| - {TIDY3D_TASK_NAME}"
-    )
-
+    ax_field.set_title( f"FDTD |Ey| - {TIDY3D_TASK_NAME}")
 
 plt.show()

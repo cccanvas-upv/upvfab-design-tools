@@ -109,8 +109,6 @@ sim = build_mmi_3x3_fdtd_simulation(
 sim.validate_pre_upload()
 
 
-# COMPROBAR GEOMETRIA
-
 fig, ax = plt.subplots(figsize=(12, 4))
 sim.plot(z=0.5 * CORE_HEIGHT_UM, ax=ax)
 ax.set_aspect("equal", adjustable="box")
@@ -132,7 +130,6 @@ if ESTIMATE_TIDY3D_COST:
     print(f"\nEstimated cost: {cost:.6g} FlexCredits")
 
 
-# CARGAR / EJECUTAR
 
 sim_data = None
 
@@ -175,9 +172,7 @@ if sim_data is not None:
         for name in names
     ])
 
-    relative_phase_deg = np.degrees(
-        np.angle(amps * np.conj(amps[1]))
-    )
+    relative_phase_deg = np.degrees(np.angle(amps * np.conj(amps[1])))
 
     print("\n" + "=" * 60)
     print("FDTD MMI 3x3 RESULTS")

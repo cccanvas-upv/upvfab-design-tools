@@ -127,8 +127,7 @@ def mmi_2x2_vertices(
     mmi_width_center_um: float | None = None,
     straight_io_length_um: float = 0.0,
 ) -> dict[str, tuple[tuple[float, float], ...]]:
-    """Return 2D MMI polygons in the FDTD propagation-lateral plane.
-
+    """
     Coordinates are ``(x, y)`` where ``x`` is the propagation direction and
     ``y`` is the lateral coordinate.
 
@@ -137,8 +136,7 @@ def mmi_2x2_vertices(
         straight section + taper section
 
     ``straight_io_length_um`` specifies the straight waveguide length at the
-    outer side of each access. Setting it to zero reproduces the previous
-    geometry.
+    outer side of each access. 
     """
 
     _validate_positive("length_um", length_um)
@@ -147,28 +145,10 @@ def mmi_2x2_vertices(
     _validate_positive("taper_width_um", taper_width_um)
     _validate_positive("mmi_width_input_um", mmi_width_input_um)
 
-    if straight_io_length_um < 0:
-        raise ValueError(
-            "straight_io_length_um must be non-negative."
-        )
-
-    if straight_io_length_um >= io_length_um:
-        raise ValueError(
-            "straight_io_length_um must be smaller than io_length_um."
-        )
-
-    if io_y_position_um <= 0:
-        raise ValueError(
-            "io_y_position_um must be positive."
-        )
 
     if mmi_width_center_um is None:
         mmi_width_center_um = mmi_width_input_um
 
-    _validate_positive(
-        "mmi_width_center_um",
-        mmi_width_center_um,
-    )
 
     # MMI limits
     x0 = -0.5 * length_um
@@ -277,23 +257,9 @@ def mmi_1x2_vertices(
     io_length_um = straight_io_length_um + taper_length_um
     """
 
-    if straight_io_length_um < 0:
-        raise ValueError(
-            "straight_io_length_um must be non-negative."
-        )
-
-    if straight_io_length_um >= io_length_um:
-        raise ValueError(
-            "straight_io_length_um must be smaller than io_length_um."
-        )
-
+    
     if mmi_width_center_um is None:
         mmi_width_center_um = mmi_width_input_um
-
-    _validate_positive(
-        "mmi_width_center_um",
-        mmi_width_center_um,
-    )
 
     # MMI limits
     x0 = -0.5 * length_um
@@ -369,8 +335,7 @@ def mmi_1x4_vertices(
     mmi_width_center_um: float | None = None,
     straight_io_length_um: float = 0.0,
 ) -> dict[str, tuple[tuple[float, float], ...]]:
-    """Return 2D polygons for a centered-input 1x4 MMI.
-
+    """
     Coordinates are (x, y), where x is propagation
     and y is the lateral coordinate.
 
@@ -380,28 +345,9 @@ def mmi_1x4_vertices(
     positions ordered from bottom to top.
     """
 
-    if len(output_y_positions_um) != 4:
-        raise ValueError(
-            "output_y_positions_um must contain exactly 4 positions."
-        )
-
-    if straight_io_length_um < 0:
-        raise ValueError(
-            "straight_io_length_um must be non-negative."
-        )
-
-    if straight_io_length_um >= io_length_um:
-        raise ValueError(
-            "straight_io_length_um must be smaller than io_length_um."
-        )
-
     if mmi_width_center_um is None:
         mmi_width_center_um = mmi_width_input_um
 
-    _validate_positive(
-        "mmi_width_center_um",
-        mmi_width_center_um,
-    )
 
     x0 = -0.5 * length_um
     x1 = +0.5 * length_um
@@ -409,14 +355,9 @@ def mmi_1x4_vertices(
     x_left = x0 - io_length_um
     x_right = x1 + io_length_um
 
-    x_taper_left = (
-        x_left + straight_io_length_um
-    )
+    x_taper_left = ( x_left + straight_io_length_um)
 
-    x_taper_right = (
-        x_right - straight_io_length_um
-    )
-
+    x_taper_right = ( x_right - straight_io_length_um)
 
     w_wg = access_width_um
     w_taper = taper_width_um
@@ -478,19 +419,6 @@ def mmi_3x3_vertices(
     straight_io_length_um: float = 0.0,
 ) -> dict[str, tuple[tuple[float, float], ...]]:
     """Return polygons for a symmetric 3x3 MMI."""
-
-    _validate_positive("length_um", length_um)
-    _validate_positive("io_length_um", io_length_um)
-    _validate_positive("port_position_um", port_position_um)
-    _validate_positive("access_width_um", access_width_um)
-    _validate_positive("taper_width_um", taper_width_um)
-    _validate_positive("mmi_width_um", mmi_width_um)
-
-    if straight_io_length_um < 0 or straight_io_length_um >= io_length_um:
-        raise ValueError(
-            "straight_io_length_um must satisfy "
-            "0 <= straight_io_length_um < io_length_um."
-        )
 
     x0 = -0.5 * length_um
     x1 = +0.5 * length_um

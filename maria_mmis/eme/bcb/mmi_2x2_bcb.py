@@ -37,7 +37,6 @@ MODE_SOLVER_BACKEND: Literal["femwell", "tidy"] = "tidy"
 WAVELENGTH_UM = 1.55
 CORE_HEIGHT_UM = 0.3
 BCB_HEIGHT_UM = 0.4
-
 MMI_WIDTH_UM = 10
 
 # Anchura nominal + incremento
@@ -100,22 +99,16 @@ def make_mode_solver():
             guided_tolerance=1e-2,
         )
 
-    raise ValueError(
-        "MODE_SOLVER_BACKEND must be 'femwell' or 'tidy'."
-    )
+    raise ValueError("MODE_SOLVER_BACKEND must be 'femwell' or 'tidy'.")
+    
 
 
 # FUNCIONES AUXILIARES
-
-def te_mode_result(
-    result: ModeSolverResult,
-) -> ModeSolverResult:
+def te_mode_result(result: ModeSolverResult) -> ModeSolverResult:
     """Return only guided TE-like modes."""
 
     if not result.te_modes:
-        raise RuntimeError(
-            "The mode solve returned no guided TE-like modes."
-        )
+        raise RuntimeError("The mode solve returned no guided TE-like modes.")
 
     return ModeSolverResult(
         modes=result.te_modes,
@@ -133,41 +126,24 @@ def scalar_projection(
 ) -> complex:
     """Project a field onto one normalized modal profile."""
 
-    mode_profile = normalize_profile(
-        mode_profile,
-        x_um,
-    )
+    mode_profile = normalize_profile(mode_profile, x_um)
 
-    return complex(
-        np.trapezoid(
-            np.conjugate(mode_profile) * field_profile,
-            x_um,
-        )
-    )
+    return complex(np.trapezoid(np.conjugate(mode_profile) * field_profile, x_um))
 
 
-def lpi_from_first_two_modes(
-    result: ModeSolverResult,
-) -> float:
+def lpi_from_first_two_modes(result: ModeSolverResult) -> float:
     """Diagnostic beat length of the first two TE-like modes."""
 
     if len(result) < 2:
-        raise RuntimeError(
-            "At least two TE modes are required to estimate Lpi."
-        )
+        raise RuntimeError("At least two TE modes are required to estimate Lpi.")
 
     beta0 = complex(result[0].beta)
     beta1 = complex(result[1].beta)
 
-    delta_beta = abs(
-        float(np.real(beta0 - beta1))
-    )
+    delta_beta = abs(float(np.real(beta0 - beta1)))
 
     if delta_beta <= 0:
-        raise RuntimeError(
-            "Could not estimate Lpi because beta0 and beta1 match."
-        )
-
+        raise RuntimeError("Could not estimate Lpi because beta0 and beta1 match.")
     return float(np.pi / delta_beta)
 
 
@@ -210,27 +186,18 @@ mmi_cross_section = strip_waveguide_bcb(
 
 solver = make_mode_solver()
 
-print(
-    f"Mode solver backend: {MODE_SOLVER_BACKEND}",
-    flush=True,
-)
+print(f"Mode solver backend: {MODE_SOLVER_BACKEND}",flush=True)
 
-print(
-    f"Solving modes of the centered "
+print(f"Solving modes of the centered "
     f"{ACCESS_WIDTH_UM:.3f} um access strip...",
     flush=True,
 )
 
-access_result = solver.solve(
-    access_cross_section,
-    wavelength_um=WAVELENGTH_UM,
-    num_modes=NUM_ACCESS_MODES,
-)
+access_result = solver.solve(access_cross_section, wavelength_um=WAVELENGTH_UM, num_modes=NUM_ACCESS_MODES)
+
 
 if not access_result.te_modes:
-    raise RuntimeError(
-        "The access waveguide solve returned no guided TE mode."
-    )
+    raise RuntimeError("The access waveguide solve returned no guided TE mode.")
 
 access_mode = access_result.te_modes[0]
 
@@ -241,30 +208,19 @@ print(
     flush=True,
 )
 
-mmi_result = solver.solve(
-    mmi_cross_section,
-    wavelength_um=WAVELENGTH_UM,
-    num_modes=NUM_MMI_MODES,
-)
-
+mmi_result = solver.solve(mmi_cross_section, wavelength_um=WAVELENGTH_UM, num_modes=NUM_MMI_MODES)
 mmi_result = te_mode_result(mmi_result)
 
 
-# DIAGNOSTICO Lpi
+#########################################################################################################################################################
 
 lpi_um = lpi_from_first_two_modes(mmi_result)
 
 MMI_LENGTH_BASE_UM = lpi_um / 2
 MMI_LENGTH_UM = MMI_LENGTH_BASE_UM + MMI_LENGTH_INCREMENT_UM
 
-
-# PERFILES TRANSVERSALES
-
-x_um = np.linspace(
-    -0.5 * DOMAIN_X_SPAN_UM,
-    +0.5 * DOMAIN_X_SPAN_UM,
-    NUM_X_POINTS,
-)
+#########################################################################################################################################
+x_um = np.linspace(-0.5 * DOMAIN_X_SPAN_UM, +0.5 * DOMAIN_X_SPAN_UM, NUM_X_POINTS )
 
 
 centered_access_profile = sample_mode_profile(
@@ -276,53 +232,20 @@ centered_access_profile = sample_mode_profile(
 
 
 # Entrada
-input_profile = shift_profile(
-    centered_access_profile,
-    x_um,
-    shift_um=INPUT_X_POSITION_UM,
-)
-
+input_profile = shift_profile(centered_access_profile,x_um,shift_um=INPUT_X_POSITION_UM,)
 
 # Dos perfiles de acceso de salida
-output_profiles = [
-    shift_profile(
-        centered_access_profile,
-        x_um,
-        shift_um=x_position_um,
-    )
-    for x_position_um in ACCESS_X_POSITIONS_UM
-]
+output_profiles = [shift_profile(centered_access_profile, x_um, shift_um=x_position_um)
+    for x_position_um in ACCESS_X_POSITIONS_UM]
 
 
 # MODOS DEL MMI
-
-mmi_profiles = sample_mode_profiles(
-    mmi_result,
-    x_um=x_um,
-    z_um=FIELD_CUT_Z_UM,
-    field_component="Ex",
-)
-
-mmi_profiles = normalize_profiles(
-    mmi_profiles,
-    x_um,
-)
-
+mmi_profiles = sample_mode_profiles(mmi_result,x_um=x_um, z_um=FIELD_CUT_Z_UM, field_component="Ex")
+mmi_profiles = normalize_profiles(mmi_profiles, x_um)
 
 # EXCITACION DEL MMI
-
-initial_amplitudes = modal_excitation_coefficients(
-    input_profile,
-    mmi_profiles,
-    x_um,
-)
-
-
-represented_input_power = float(
-    np.sum(
-        np.abs(initial_amplitudes) ** 2
-    )
-)
+initial_amplitudes = modal_excitation_coefficients(input_profile, mmi_profiles, x_um)
+represented_input_power = float(np.sum(np.abs(initial_amplitudes) ** 2))
 
 
 # PROPAGACION
@@ -334,14 +257,10 @@ propagation = propagate_modes(
     dz_um=DZ_UM,
 )
 
-
-final_field = propagation.reconstruct_field(
-    mmi_profiles
-)[-1]
+final_field = propagation.reconstruct_field(mmi_profiles)[-1]
 
 
 # PROYECCION SOBRE LOS DOS PUERTOS
-
 output_amplitudes = np.array(
     [
         scalar_projection(
@@ -355,66 +274,34 @@ output_amplitudes = np.array(
 )
 
 
-output_powers = np.abs(
-    output_amplitudes
-) ** 2
+output_powers = np.abs(output_amplitudes) ** 2
 
+transmissions = (output_powers/ represented_input_power)
 
-transmissions = (
-    output_powers
-    / represented_input_power
-)
-
-
-collected_output_transmission = float(
-    np.sum(transmissions)
-)
-
+collected_output_transmission = float(np.sum(transmissions))
 
 if collected_output_transmission > 0:
 
-    split_fractions = (
-        transmissions
-        / collected_output_transmission
-    )
+    split_fractions = (transmissions/ collected_output_transmission )
 
 else:
 
-    split_fractions = np.zeros_like(
-        transmissions
-    )
+    split_fractions = np.zeros_like(transmissions)
 
-
-# METRICAS EQUIVALENTES A LA TABLA
-
+# METRICAS 
 total_power_in_coupled = represented_input_power
-
 power_over_outputs = output_powers.copy()
-
-total_out_power = float(
-    np.sum(power_over_outputs)
-)
-
+total_out_power = float(np.sum(power_over_outputs))
 
 if total_out_power > 0:
 
-    ratio_over_outputs = (
-        power_over_outputs
-        / total_out_power
-    )
-
-    excess_loss_db = (
-        -10.0 * np.log10(total_out_power)
-    )
+    ratio_over_outputs = (power_over_outputs/ total_out_power)
+    excess_loss_db = (-10.0 * np.log10(total_out_power))
 
 else:
 
-    ratio_over_outputs = np.zeros_like(
-        power_over_outputs
-    )
-
+    ratio_over_outputs = np.zeros_like(power_over_outputs)
     excess_loss_db = np.inf
-
 
 # REPRESENTACION
 
@@ -422,163 +309,93 @@ fig, ax = plot_propagation(
     propagation,
     x_um=x_um,
     field_profiles=mmi_profiles,
-    xlim=(
-        -0.5 * DOMAIN_X_SPAN_UM,
-        +0.5 * DOMAIN_X_SPAN_UM,
-    ),
-    zlim=(
-        0.0,
-        MMI_LENGTH_UM,
-    ),
+    xlim=(-0.5 * DOMAIN_X_SPAN_UM, +0.5 * DOMAIN_X_SPAN_UM,),
+    zlim=(0.0,MMI_LENGTH_UM ),
 )
 
 
 # Bordes del MMI
-ax.axhline(
-    -0.5 * MMI_WIDTH_UM,
-    color="white",
-    linewidth=0.8,
-    alpha=0.75,
-)
+ax.axhline(-0.5 * MMI_WIDTH_UM, color="white", linewidth=0.8, alpha=0.75)
 
-ax.axhline(
-    +0.5 * MMI_WIDTH_UM,
-    color="white",
-    linewidth=0.8,
-    alpha=0.75,
-)
+ax.axhline(+0.5 * MMI_WIDTH_UM, color="white", linewidth=0.8, alpha=0.75)
 
 
 # Posiciones de los accesos
 for x_position_um in ACCESS_X_POSITIONS_UM:
 
-    ax.axhline(
-        x_position_um,
-        color="cyan",
-        linestyle="--",
-        linewidth=0.8,
-        alpha=0.85,
-    )
-
+    ax.axhline(x_position_um, color="cyan", linestyle="--", linewidth=0.8, alpha=0.85)
 
 # RESULTADOS
-
 print("\n" + "=" * 55)
 print("2x2 MMI EME SUMMARY")
 print("=" * 55)
 
-print(
-    f"Mode solver backend: "
-    f"{MODE_SOLVER_BACKEND}"
-)
+print(f"Mode solver backend: "
+    f"{MODE_SOLVER_BACKEND}")
 
-print(
-    f"Wavelength: "
-    f"{WAVELENGTH_UM:.4f} um"
-)
+print(f"Wavelength: "
+    f"{WAVELENGTH_UM:.4f} um")
 
-print(
-    f"MMI width: "
-    f"{MMI_WIDTH_UM:.4f} um"
-)
+print(f"MMI width: "
+    f"{MMI_WIDTH_UM:.4f} um")
 
-print(
-    f"MMI length base (Lpi / 2): "
-    f"{MMI_LENGTH_BASE_UM:.4f} um"
-)
+print(f"MMI length base (3*Lpi / 4*2): "
+    f"{MMI_LENGTH_BASE_UM:.4f} um")
 
-print(
-    f"MMI length increment: "
-    f"{MMI_LENGTH_INCREMENT_UM:+.4f} um"
-)
+print(f"MMI length increment: "
+    f"{MMI_LENGTH_INCREMENT_UM:+.4f} um")
 
-print(
-    f"MMI length: "
-    f"{MMI_LENGTH_UM:.4f} um"
-)
+print(f"MMI length: "
+    f"{MMI_LENGTH_UM:.4f} um")
 
-print(
-    f"Access width base: "
-    f"{ACCESS_WIDTH_BASE_UM:.4f} um"
-)
+print(f"Access width base: "
+    f"{ACCESS_WIDTH_BASE_UM:.4f} um")
 
-print(
-    f"Access width increment: "
-    f"{ACCESS_WIDTH_INCREMENT_UM:+.4f} um"
-)
+print(f"Access width increment: "
+    f"{ACCESS_WIDTH_INCREMENT_UM:+.4f} um")
 
-print(
-    f"Access width: "
-    f"{ACCESS_WIDTH_UM:.4f} um"
-)
+print(f"Access width: "
+    f"{ACCESS_WIDTH_UM:.4f} um")
 
-print(
-    f"dy: "
-    f"{DY:+.4f} um"
-)
+print(f"dy: "
+    f"{DY:+.4f} um")
 
-print(
-    "Access positions: "
-    f"{ACCESS_X_POSITIONS_UM} um"
-)
+print("Access positions: "
+    f"{ACCESS_X_POSITIONS_UM} um")
 
-print(
-    f"Input position: "
-    f"{INPUT_X_POSITION_UM:+.4f} um"
-)
+print(f"Input position: "
+    f"{INPUT_X_POSITION_UM:+.4f} um")
 
-print(
-    f"TE modes used in MMI: "
-    f"{len(mmi_result)}"
-)
+print(f"TE modes used in MMI: "
+    f"{len(mmi_result)}")
 
-print(
-    f"Lpi from first two TE modes: "
-    f"{lpi_um:.6f} um"
-)
+print(f"Lpi from first two TE modes: "
+    f"{lpi_um:.6f} um")
 
-print(
-    f"Lmmi / Lpi: "
-    f"{MMI_LENGTH_UM / lpi_um:.6f}"
-)
-
+print(f"Lmmi / Lpi: "
+    f"{MMI_LENGTH_UM / lpi_um:.6f}")
 
 print("\n--- PERFORMANCE ---")
 
-print(
-    f"Total power IN coupled: "
-    f"{total_power_in_coupled:.4f}"
-)
+print(f"Total power IN coupled: "
+    f"{total_power_in_coupled:.4f}")
 
-print(
-    f"Total OUT power: "
-    f"{total_out_power:.4f}"
-)
+print(f"Total OUT power: "
+    f"{total_out_power:.4f}")
 
-print(
-    f"Excess loss [dB]: "
-    f"{excess_loss_db:.4f}"
-)
+print(f"Excess loss [dB]: "
+    f"{excess_loss_db:.4f}")
 
-print(
-    "Power over outputs: "
-    f"{[f'{power:.4f}' for power in power_over_outputs]}"
-)
+print("Power over outputs: "
+    f"{[f'{power:.4f}' for power in power_over_outputs]}")
 
-print(
-    "Ratio over outputs: "
-    f"{[f'{ratio:.4f}' for ratio in ratio_over_outputs]}"
-)
+print("Ratio over outputs: "
+    f"{[f'{ratio:.4f}' for ratio in ratio_over_outputs]}")
 
 
 print("\n--- OUTPUT DETAILS ---")
 
-for (
-    x_position_um,
-    power,
-    transmission,
-    split_fraction,
-) in zip(
+for (x_position_um,power,transmission,split_fraction) in zip(
     ACCESS_X_POSITIONS_UM,
     output_powers,
     transmissions,
@@ -594,10 +411,8 @@ for (
     )
 
 
-print(
-    "\nCollected output transmission: "
-    f"{collected_output_transmission:.6f}"
-)
+print("\nCollected output transmission: "
+    f"{collected_output_transmission:.6f}")
 
 print("=" * 55)
 

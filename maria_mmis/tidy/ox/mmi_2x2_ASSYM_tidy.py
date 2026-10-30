@@ -27,9 +27,6 @@ TIDY3D_TASK_NAME = "mmi72_L02minus1.8_dyminus0.05_wt2.8"
 TIDY3D_DATA_PATH = f"data/{TIDY3D_TASK_NAME}.hdf5"
 
 
-# ============================================================
-# DISPOSITIVO
-# ============================================================
 
 WAVELENGTH_UM = 1.55
 CORE_HEIGHT_UM = 0.30
@@ -38,7 +35,6 @@ MMI_WIDTH_UM = 10.0
 
 # Sustituir por el valor optimizado del EME
 MMI_LENGTH_UM = 88.7813 - 1.8
-
 
 ACCESS_WIDTH_UM = 1
 TAPER_WIDTH_UM = 2.8
@@ -49,10 +45,6 @@ IO_LENGTH_UM = STRAIGHT_IO_LENGTH_UM + TAPER_LENGTH_UM
 
 DY_UM = -0.05
 
-
-# ============================================================
-# POSICIONES DESDE LOS BORDES
-# ============================================================
 
 D1_UM = MMI_WIDTH_UM / 5.0
 D0_UM = 2.0 * MMI_WIDTH_UM / 5.0
@@ -69,28 +61,9 @@ OUTPUT_Y_POSITIONS_UM = (
 
 INPUT_PORT = "bottom"
 
-
-# ============================================================
-# INFORMACION GEOMETRICA
-# ============================================================
-
-input_gap = (
-    INPUT_Y_POSITIONS_UM[1]
-    - INPUT_Y_POSITIONS_UM[0]
-    - TAPER_WIDTH_UM
-)
-
-output_gap = (
-    OUTPUT_Y_POSITIONS_UM[1]
-    - OUTPUT_Y_POSITIONS_UM[0]
-    - TAPER_WIDTH_UM
-)
-
-edge_clearance = (
-    MMI_WIDTH_UM / 2
-    - max(abs(y) for y in INPUT_Y_POSITIONS_UM + OUTPUT_Y_POSITIONS_UM)
-    - TAPER_WIDTH_UM / 2
-)
+input_gap = (INPUT_Y_POSITIONS_UM[1] - INPUT_Y_POSITIONS_UM[0] - TAPER_WIDTH_UM)
+output_gap = (OUTPUT_Y_POSITIONS_UM[1] - OUTPUT_Y_POSITIONS_UM[0]- TAPER_WIDTH_UM)
+edge_clearance = (MMI_WIDTH_UM / 2 - max(abs(y) for y in INPUT_Y_POSITIONS_UM + OUTPUT_Y_POSITIONS_UM)- TAPER_WIDTH_UM / 2)
 
 print("\n--- 72:28 GEOMETRY ---")
 print(f"Input positions:  {INPUT_Y_POSITIONS_UM} um")
@@ -100,10 +73,7 @@ print(f"Input gap: {input_gap:.4f} um")
 print(f"Output gap: {output_gap:.4f} um")
 print(f"Minimum edge clearance: {edge_clearance:.4f} um")
 
-
-# ============================================================
 # STACK
-# ============================================================
 
 cross_section = strip_waveguide(
     width=ACCESS_WIDTH_UM,
@@ -119,9 +89,7 @@ cross_section = strip_waveguide(
 )
 
 
-# ============================================================
 # GEOMETRIA
-# ============================================================
 
 polygons = mmi_2x2_asymmetric_vertices(
     length_um=MMI_LENGTH_UM,
@@ -134,10 +102,7 @@ polygons = mmi_2x2_asymmetric_vertices(
     mmi_width_um=MMI_WIDTH_UM,
 )
 
-
-# ============================================================
 # FDTD
-# ============================================================
 
 sim = build_mmi_2x2_asymmetric_fdtd_simulation(
     polygons=polygons,
@@ -161,18 +126,11 @@ sim = build_mmi_2x2_asymmetric_fdtd_simulation(
 sim.validate_pre_upload()
 
 
-# ============================================================
-# COMPROBAR GEOMETRIA
-# ============================================================
-
 fig, ax = plt.subplots(figsize=(12, 4))
 sim.plot(z=CORE_HEIGHT_UM / 2, ax=ax)
 ax.set_aspect("equal", adjustable="box")
 
 
-# ============================================================
-# COSTE
-# ============================================================
 
 if ESTIMATE_TIDY3D_COST:
     test_tidy3d_api()
@@ -186,16 +144,10 @@ if ESTIMATE_TIDY3D_COST:
     print(f"\nEstimated cost: {cost:.6g} FlexCredits")
 
 
-# ============================================================
-# LOAD / RUN
-# ============================================================
-
 sim_data = None
 
 if LOAD_TIDY3D_DATA:
-    sim_data = load_tidy3d_simulation_data(
-        TIDY3D_DATA_PATH
-    )
+    sim_data = load_tidy3d_simulation_data(TIDY3D_DATA_PATH)
 
 if RUN_TIDY3D_CLOUD:
     import tidy3d.web as web
@@ -210,24 +162,10 @@ if RUN_TIDY3D_CLOUD:
     )
 
 
-# ============================================================
-# RESULTADOS
-# ============================================================
-
 if sim_data is not None:
 
-    T_bottom = float(
-        np.real(
-            sim_data["flux_bottom"].flux.values.squeeze()
-        )
-    )
-
-    T_top = float(
-        np.real(
-            sim_data["flux_top"].flux.values.squeeze()
-        )
-    )
-
+    T_bottom = float(np.real(sim_data["flux_bottom"].flux.values.squeeze()))
+    T_top = float(np.real(sim_data["flux_top"].flux.values.squeeze()))
     T_total = T_bottom + T_top
 
     K_bottom = T_bottom / T_total
@@ -247,9 +185,7 @@ if sim_data is not None:
         .values.squeeze()
     )
 
-    phase_difference_deg = np.degrees(
-        np.angle(a_top * np.conj(a_bottom))
-    )
+    phase_difference_deg = np.degrees(np.angle(a_top * np.conj(a_bottom)))
 
     print("\n" + "=" * 55)
     print("FDTD MMI 2x2 - 72:28")

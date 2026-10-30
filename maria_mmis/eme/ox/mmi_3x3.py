@@ -457,12 +457,8 @@ ax.set_title(
 
 # BARRIDO DE FASE ENTRE LAS DOS ENTRADAS
 
-
 PHASE_SWEEP_DEG = np.linspace(-180.0,+180.0, 361)
-
-
 PHASE_SWEEP_RAD = np.deg2rad( PHASE_SWEEP_DEG)
-
 
 # Por linealidad:
 #
@@ -477,357 +473,148 @@ PHASE_SWEEP_RAD = np.deg2rad( PHASE_SWEEP_DEG)
 # para amplitudes iguales.
 
 phase_sweep_outputs = (
-    h_top[
-        np.newaxis,
-        :
-    ]
+    h_top[np.newaxis, :] +
+    np.exp(1j* PHASE_SWEEP_RAD[:, np.newaxis,])* h_bottom[np.newaxis,:]) / np.sqrt(2.0)
 
-    +
+phase_sweep_powers = (np.abs(phase_sweep_outputs) ** 2)
 
-    np.exp(
-        1j
-        * PHASE_SWEEP_RAD[
-            :,
-            np.newaxis,
-        ]
-    )
-
-    * h_bottom[
-        np.newaxis,
-        :
-    ]
-) / np.sqrt(2.0)
-
-
-phase_sweep_powers = (
-    np.abs(
-        phase_sweep_outputs
-    ) ** 2
-)
-
-
-# ============================================================
-# PLOT DEL HYBRID 120 DEG
-# ============================================================
-
-fig_phase, ax_phase = plt.subplots(
-    figsize=(
-        8,
-        5,
-    )
-)
-
+# PLOT
+fig_phase, ax_phase = plt.subplots(figsize=( 8, 5,))
 
 for output_index, output_name in enumerate(
     PORT_NAMES
 ):
-
     ax_phase.plot(
         PHASE_SWEEP_DEG,
-        phase_sweep_powers[
-            :,
-            output_index,
-        ],
+        phase_sweep_powers[:, output_index,],
         label=output_name,
     )
 
 
-ax_phase.set_xlabel(
-    "Input phase difference "
-    r"$\Delta\phi$ (deg)"
-)
-
-
-ax_phase.set_ylabel(
-    "Output power"
-)
-
-
-ax_phase.set_title(
-    "3x3 hybrid response vs input phase"
-)
-
-
-ax_phase.grid(
-    True,
-    alpha=0.3,
-)
-
-
+ax_phase.set_xlabel("Input phase difference "
+    r"$\Delta\phi$ (deg)")
+ax_phase.set_ylabel("Output power")
+ax_phase.set_title("3x3 hybrid response vs input phase")
+ax_phase.grid(True,alpha=0.3)
 ax_phase.legend()
-
-
 fig_phase.tight_layout()
 
-
-# ============================================================
 # RESULTADOS
-# ============================================================
 
-print(
-    "\n"
-    + "=" * 70
-)
+print("\n"
+    + "=" * 70)
+print("3x3 MMI - 120 DEGREE OPTICAL HYBRID")
+print("=" * 70)
+print(f"Mode solver backend: "
+    f"{MODE_SOLVER_BACKEND}")
+print(f"Wavelength: "
+    f"{WAVELENGTH_UM:.4f} um")
+print(f"MMI width: "
+    f"{MMI_WIDTH_UM:.4f} um")
 
+print(f"Lpi: "
+    f"{lpi_um:.6f} um")
 
-print(
-    "3x3 MMI - 120 DEGREE OPTICAL HYBRID"
-)
-
-
-print(
-    "=" * 70
-)
-
-
-print(
-    f"Mode solver backend: "
-    f"{MODE_SOLVER_BACKEND}"
-)
-
-
-print(
-    f"Wavelength: "
-    f"{WAVELENGTH_UM:.4f} um"
-)
-
-
-print(
-    f"MMI width: "
-    f"{MMI_WIDTH_UM:.4f} um"
-)
-
-
-print(
-    f"Lpi: "
-    f"{lpi_um:.6f} um"
-)
-
-
-print(
-    f"General-interference base length "
+print(f"General-interference base length "
     f"(3*Lpi/N): "
-    f"{MMI_LENGTH_BASE_UM:.6f} um"
-)
+    f"{MMI_LENGTH_BASE_UM:.6f} um")
+
+print(f"Length increment: "
+    f"{MMI_LENGTH_INCREMENT_UM:+.6f} um")
+
+print(f"MMI length: "
+    f"{MMI_LENGTH_UM:.6f} um")
+
+print(f"Lmmi / Lpi: "
+    f"{MMI_LENGTH_UM / lpi_um:.6f}")
+
+print( "\n--- PORT GEOMETRY ---")
+
+print( f"Taper width at MMI: "
+    f"{TAPER_WIDTH_UM:.4f} um")
+
+print(f"Base port position W/3: "
+    f"{PORT_POSITION_BASE_UM:.4f} um")
+
+print(f"Port position offset: "
+    f"{PORT_POSITION_OFFSET_UM:+.4f} um")
+
+print(f"Outer port position: "
+    f"+/- {PORT_POSITION_UM:.4f} um")
+
+print(f"Port positions: "
+    f"{PORT_POSITIONS_UM}")
+
+print(f"Implied geometric gap: "
+    f"{IMPLIED_GAP_UM:.4f} um")
+
+print("\n--- SINGLE-INPUT COLUMN CHECK ---")
+
+print("TOP input splitting [%]:")
+
+for name, value in zip(PORT_NAMES,top_split,strict=True,):
+    print(f"  {name:>6s}: "
+        f"{100 * value:.3f} %")
 
 
-print(
-    f"Length increment: "
-    f"{MMI_LENGTH_INCREMENT_UM:+.6f} um"
-)
+print("\nBOTTOM input splitting [%]:")
 
+for name, value in zip(PORT_NAMES,bottom_split,strict=True):
 
-print(
-    f"MMI length: "
-    f"{MMI_LENGTH_UM:.6f} um"
-)
+    print(f"  {name:>6s}: "
+        f"{100 * value:.3f} %")
 
+print("\n--- HYBRID PHASE OFFSETS ---")
 
-print(
-    f"Lmmi / Lpi: "
-    f"{MMI_LENGTH_UM / lpi_um:.6f}"
-)
+for name, phase in zip(PORT_NAMES, hybrid_phase_offsets_deg, strict=True):
 
+    print(f"  {name:>6s}: "
+        f"{phase:+.3f} deg")
 
-print(
-    "\n--- PORT GEOMETRY ---"
-)
-
-
-print(
-    f"Taper width at MMI: "
-    f"{TAPER_WIDTH_UM:.4f} um"
-)
-
-
-print(
-    f"Base port position W/3: "
-    f"{PORT_POSITION_BASE_UM:.4f} um"
-)
-
-
-print(
-    f"Port position offset: "
-    f"{PORT_POSITION_OFFSET_UM:+.4f} um"
-)
-
-
-print(
-    f"Outer port position: "
-    f"+/- {PORT_POSITION_UM:.4f} um"
-)
-
-
-print(
-    f"Port positions: "
-    f"{PORT_POSITIONS_UM}"
-)
-
-
-print(
-    f"Implied geometric gap: "
-    f"{IMPLIED_GAP_UM:.4f} um"
-)
-
-
-# ============================================================
-# DIAGNOSTICO DE CADA COLUMNA
-# ============================================================
-
-print(
-    "\n--- SINGLE-INPUT COLUMN CHECK ---"
-)
-
-
-print(
-    "TOP input splitting [%]:"
-)
-
-
-for name, value in zip(
-    PORT_NAMES,
-    top_split,
-    strict=True,
-):
-
-    print(
-        f"  {name:>6s}: "
-        f"{100 * value:.3f} %"
-    )
-
-
-print(
-    "\nBOTTOM input splitting [%]:"
-)
-
-
-for name, value in zip(
-    PORT_NAMES,
-    bottom_split,
-    strict=True,
-):
-
-    print(
-        f"  {name:>6s}: "
-        f"{100 * value:.3f} %"
-    )
-
-
-# ============================================================
-# DIAGNOSTICO DE FASE 120 DEG
-# ============================================================
-
-print(
-    "\n--- HYBRID PHASE OFFSETS ---"
-)
-
-
-for name, phase in zip(
-    PORT_NAMES,
-    hybrid_phase_offsets_deg,
-    strict=True,
-):
-
-    print(
-        f"  {name:>6s}: "
-        f"{phase:+.3f} deg"
-    )
-
-
-print(
-    "\nCircular phase spacings:"
-)
-
+print("\nCircular phase spacings:")
 
 for spacing in phase_spacings_deg:
 
-    print(
-        f"  {spacing:.3f} deg"
-    )
+    print(f"  {spacing:.3f} deg")
 
 
-print(
-    "Ideal hybrid spacing: "
-    "120 deg / 120 deg / 120 deg"
-)
+print("Ideal hybrid spacing: "
+    "120 deg / 120 deg / 120 deg")
 
+print("\n--- SIMULTANEOUS TOP + BOTTOM INPUT ---")
 
-# ============================================================
-# EXCITACION SIMULTANEA
-# ============================================================
+print(f"TOP amplitude: "
+    f"{TOP_INPUT_AMPLITUDE:.4f}")
 
-print(
-    "\n--- SIMULTANEOUS TOP + BOTTOM INPUT ---"
-)
+print(f"BOTTOM amplitude: "
+    f"{BOTTOM_INPUT_AMPLITUDE:.4f}")
 
-
-print(
-    f"TOP amplitude: "
-    f"{TOP_INPUT_AMPLITUDE:.4f}"
-)
-
-
-print(
-    f"BOTTOM amplitude: "
-    f"{BOTTOM_INPUT_AMPLITUDE:.4f}"
-)
-
-
-print(
-    f"Input phase difference "
+print(f"Input phase difference "
     f"(BOTTOM relative to TOP): "
-    f"{DELTA_PHI_IN_DEG:+.3f} deg"
-)
+    f"{DELTA_PHI_IN_DEG:+.3f} deg")
+
+print(f"Represented input power: "
+    f"{hybrid_result['represented_input_power']:.6f}")
+
+print(f"Collected output transmission: "
+    f"{hybrid_result['collected_transmission']:.6f}")
+
+print(f"Excess loss: "
+    f"{hybrid_result['excess_loss_db']:.4f} dB")
+
+print("\nOutputs:")
 
 
-print(
-    f"Represented input power: "
-    f"{hybrid_result['represented_input_power']:.6f}"
-)
-
-
-print(
-    f"Collected output transmission: "
-    f"{hybrid_result['collected_transmission']:.6f}"
-)
-
-
-print(
-    f"Excess loss: "
-    f"{hybrid_result['excess_loss_db']:.4f} dB"
-)
-
-
-print(
-    "\nOutputs:"
-)
-
-
-for (
-    name,
-    position_um,
-    power,
-    transmission,
-    split,
-    phase,
-    relative_phase,
-) in zip(
+for (name,position_um, power, transmission, split, phase, relative_phase,) in zip(
     PORT_NAMES,
     PORT_POSITIONS_UM,
-    hybrid_result[
-        "output_powers"
-    ],
-    hybrid_result[
-        "transmissions"
-    ],
-    hybrid_result[
-        "split_fractions"
-    ],
+    hybrid_result["output_powers"],
+    hybrid_result["transmissions"],
+    hybrid_result["split_fractions"],
     hybrid_output_phases_deg,
     hybrid_relative_phases_deg,
     strict=True,
 ):
-
     print(
         f"{name:>6s} | "
         f"y={position_um:+.4f} um | "
@@ -838,11 +625,6 @@ for (
         f"relative={relative_phase:+.2f} deg"
     )
 
-
-print(
-    "\n"
-    + "=" * 70
-)
-
+print("\n"+ "=" * 70)
 
 plt.show()
