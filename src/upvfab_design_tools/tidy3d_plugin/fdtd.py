@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from typing import Literal
 
@@ -48,12 +48,15 @@ def mmi_2x2_vertices(
     taper_width_um: float,
     mmi_width_input_um: float,
     mmi_width_center_um: float | None = None,
+    port_straight_length_um: float = 0.0,
 ) -> dict[str, tuple[tuple[float, float], ...]]:
     """Return 2D MMI polygons in the FDTD propagation-lateral plane.
 
     Coordinates are ``(x, y)`` where ``x`` is the propagation direction and
     ``y`` is the lateral coordinate. This mirrors the exploratory Annex 3
     notebook geometry while keeping the vertices available as reusable data.
+    ``port_straight_length_um`` optionally adds uniform access sections outside
+    the four tapers so modal sources and monitors need not intersect a taper.
     """
 
     _validate_positive("length_um", length_um)
@@ -61,6 +64,7 @@ def mmi_2x2_vertices(
     _validate_positive("access_width_um", access_width_um)
     _validate_positive("taper_width_um", taper_width_um)
     _validate_positive("mmi_width_input_um", mmi_width_input_um)
+    _validate_nonnegative("port_straight_length_um", port_straight_length_um)
 
     if io_y_position_um <= 0:
         raise ValueError("io_y_position_um must be positive.")
@@ -80,7 +84,7 @@ def mmi_2x2_vertices(
     w0 = mmi_width_input_um
     w1 = mmi_width_center_um
 
-    return {
+    polygons = {
         "mmi": (
             (x0, -0.5 * w0),
             (0.0, -0.5 * w1),
@@ -114,6 +118,41 @@ def mmi_2x2_vertices(
             (x1, -y + 0.5 * w_taper),
         ),
     }
+
+    if port_straight_length_um > 0:
+        x_left_port = x_left - port_straight_length_um
+        x_right_port = x_right + port_straight_length_um
+
+        polygons.update(
+            {
+                "in_top_straight": (
+                    (x_left_port, y - 0.5 * w_wg),
+                    (x_left, y - 0.5 * w_wg),
+                    (x_left, y + 0.5 * w_wg),
+                    (x_left_port, y + 0.5 * w_wg),
+                ),
+                "in_bottom_straight": (
+                    (x_left_port, -y - 0.5 * w_wg),
+                    (x_left, -y - 0.5 * w_wg),
+                    (x_left, -y + 0.5 * w_wg),
+                    (x_left_port, -y + 0.5 * w_wg),
+                ),
+                "out_top_straight": (
+                    (x_right, y - 0.5 * w_wg),
+                    (x_right_port, y - 0.5 * w_wg),
+                    (x_right_port, y + 0.5 * w_wg),
+                    (x_right, y + 0.5 * w_wg),
+                ),
+                "out_bottom_straight": (
+                    (x_right, -y - 0.5 * w_wg),
+                    (x_right_port, -y - 0.5 * w_wg),
+                    (x_right_port, -y + 0.5 * w_wg),
+                    (x_right, -y + 0.5 * w_wg),
+                ),
+            }
+        )
+
+    return polygons
 
 
 def taper_vertices(
@@ -482,6 +521,7 @@ def build_mmi_2x2_fdtd_simulation(
     io_y_position_um: float,
     access_width_um: float,
     bandwidth_um: float = 0.1,
+    monitor_wavelengths_um: Iterable[float] | None = None,
     pad_x_um: float = 2.0,
     pad_y_um: float = 2.0,
     pad_z_um: float = 1.0,
@@ -495,7 +535,12 @@ def build_mmi_2x2_fdtd_simulation(
     run_time_s: float = 2e-12,
     core_name: str | None = "core",
 ):
-    """Build a Tidy3D FDTD simulation for a 2x2 MMI layout."""
+    """Build a Tidy3D FDTD simulation for a 2x2 MMI layout.
+
+    When ``monitor_wavelengths_um`` is provided, flux and mode monitors sample
+    all those wavelengths while the planar field monitor remains at the central
+    wavelength.
+    """
 
     _validate_positive("wavelength_um", wavelength_um)
     _validate_positive("access_width_um", access_width_um)
@@ -533,6 +578,7 @@ def build_mmi_2x2_fdtd_simulation(
         io_y_position_um=io_y_position_um,
         access_width_um=access_width_um,
         bandwidth_um=bandwidth_um,
+        monitor_wavelengths_um=monitor_wavelengths_um,
         source_offset_um=source_offset_um,
         monitor_offset_um=monitor_offset_um,
         mode_plane_y_span_um=mode_plane_y_span_um,
@@ -670,6 +716,7 @@ def mmi_2x2_sources_and_monitors(
     io_y_position_um: float,
     access_width_um: float,
     bandwidth_um: float,
+    monitor_wavelengths_um: Iterable[float] | None,
     source_offset_um: float,
     monitor_offset_um: float,
     mode_plane_y_span_um: float | None = None,
@@ -687,6 +734,11 @@ def mmi_2x2_sources_and_monitors(
     fwidth = td.C_0 / wavelength_um**2 * bandwidth_um
     source_time = td.GaussianPulse(freq0=freq0, fwidth=fwidth)
     mode_spec = td.ModeSpec(num_modes=1)
+    monitor_freqs = _monitor_frequencies(
+        td=td,
+        central_wavelength_um=wavelength_um,
+        monitor_wavelengths_um=monitor_wavelengths_um,
+    )
     x_min, x_max = _polygon_x_bounds(polygons)
     y_source = io_y_position_um if input_port == "top" else -io_y_position_um
     x_source = x_min + source_offset_um
@@ -713,39 +765,39 @@ def mmi_2x2_sources_and_monitors(
     flux_reflection = td.FluxMonitor(
         center=(x_ref_monitor, y_source, z_center),
         size=monitor_size,
-        freqs=[freq0],
+        freqs=monitor_freqs,
         name="flux_reflection",
     )
     mode_reflection = td.ModeMonitor(
         center=(x_ref_monitor, y_source, z_center),
         size=monitor_size,
-        freqs=[freq0],
+        freqs=monitor_freqs,
         mode_spec=mode_spec,
         name="mode_reflection",
     )
     flux_top = td.FluxMonitor(
         center=(x_monitor, io_y_position_um, z_center),
         size=monitor_size,
-        freqs=[freq0],
+        freqs=monitor_freqs,
         name="flux_top",
     )
     flux_bottom = td.FluxMonitor(
         center=(x_monitor, -io_y_position_um, z_center),
         size=monitor_size,
-        freqs=[freq0],
+        freqs=monitor_freqs,
         name="flux_bottom",
     )
     mode_top = td.ModeMonitor(
         center=(x_monitor, io_y_position_um, z_center),
         size=monitor_size,
-        freqs=[freq0],
+        freqs=monitor_freqs,
         mode_spec=mode_spec,
         name="mode_top",
     )
     mode_bottom = td.ModeMonitor(
         center=(x_monitor, -io_y_position_um, z_center),
         size=monitor_size,
-        freqs=[freq0],
+        freqs=monitor_freqs,
         mode_spec=mode_spec,
         name="mode_bottom",
     )
@@ -1124,6 +1176,32 @@ def _validate_positive(name: str, value: float) -> None:
 def _validate_nonnegative(name: str, value: float) -> None:
     if value < 0:
         raise ValueError(f"{name} must be non-negative.")
+
+
+def _monitor_frequencies(
+    *,
+    td,
+    central_wavelength_um: float,
+    monitor_wavelengths_um: Iterable[float] | None,
+) -> tuple[float, ...]:
+    """Return increasing monitor frequencies for optional wavelengths."""
+
+    if monitor_wavelengths_um is None:
+        return (float(td.C_0 / central_wavelength_um),)
+
+    wavelengths_um = np.asarray(tuple(monitor_wavelengths_um), dtype=float)
+
+    if wavelengths_um.ndim != 1 or wavelengths_um.size == 0:
+        raise ValueError("monitor_wavelengths_um must be a non-empty 1D sequence.")
+
+    if not np.all(np.isfinite(wavelengths_um)):
+        raise ValueError("monitor_wavelengths_um must contain finite values.")
+
+    if np.any(wavelengths_um <= 0):
+        raise ValueError("monitor_wavelengths_um must contain positive values.")
+
+    frequencies_hz = np.sort(td.C_0 / wavelengths_um)
+    return tuple(float(frequency_hz) for frequency_hz in frequencies_hz)
 
 
 def _import_tidy3d():

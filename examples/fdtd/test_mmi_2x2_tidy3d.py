@@ -9,6 +9,7 @@ from upvfab_design_tools.core.materials import (
     BCB,
     SILICON_NITRIDE,
     THERMAL_SILICON_DIOXIDE,
+    SILICON,
 )
 from upvfab_design_tools.tidy3d_plugin import (
     build_mmi_2x2_fdtd_simulation,

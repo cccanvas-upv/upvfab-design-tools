@@ -17,6 +17,7 @@ dependencies = [
     "scipy",
     "matplotlib",
     "pyyaml",
+    "ipykernel>=7.3.0",
 ]
 
 [project.optional-dependencies]

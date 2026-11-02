@@ -14,14 +14,15 @@ from upvfab_design_tools.core.visualization import (
     save_figure,
 )
 from upvfab_design_tools.core.waveguides import strip_waveguide
+import numpy as np
 
 # Waveguide parameters 
-wvgd_width = 1.0
+wvgd_width = 10.0
 wvgd_thickness = 0.3
-bcb_thickness = 0.5
+bcb_thickness = 0.4
 
 # Modesolver parameters
-window_width = 10.0 
+window_width = 13.0 
 bottom_margin = 3.0
 top_margin = 3.0
 
@@ -49,7 +50,7 @@ sin_core = Trapezoid.from_sidewall_angle(
     height=wvgd_thickness,
     width=wvgd_width,
     width_reference="bottom",
-    sidewall_angle_deg=6.0,
+    sidewall_angle_deg=0.0,
     material=SILICON_NITRIDE,
     name="Core",
 )
@@ -62,8 +63,8 @@ xs = CrossSection(
     z_min=-bottom_margin,
     z_max=wvgd_thickness + top_margin,
     structures=(
-        # bcb_region,
-        # air_region,
+        bcb_region,
+        air_region,
         sin_core,
     ),
 )
@@ -121,7 +122,7 @@ solver = FemwellModeSolver(
 result = solver.solve(
     cross_section=xs,
     wavelength_um=1.55,
-    num_modes=4,
+    num_modes=14,
 )
 
 # Need to adjust because in a grid I might need to switch from one field component to another. TE/TM
@@ -151,3 +152,18 @@ for mode in result.modes:
         mode.te_fraction,
         mode.tm_fraction,
     )
+
+te_modes = result.te_modes
+if len(te_modes) < 2:
+    raise RuntimeError(
+        f"Se encontraron {len(te_modes)} modos TE; se necesitan al menos dos para calcular Lpi_TE."
+    )
+
+te0, te1 = te_modes[:2]
+beta_te0 = float(np.real(te0.beta))
+beta_te1 = float(np.real(te1.beta))
+delta_beta_te = abs(beta_te0 - beta_te1)
+if delta_beta_te <= 0.0:
+    raise RuntimeError("TE0 y TE1 tienen la misma constante de propagación.")
+
+lpi_te_um = float(np.pi / delta_beta_te)

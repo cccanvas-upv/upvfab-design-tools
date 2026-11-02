@@ -7,27 +7,27 @@ import numpy as np
 import tidy3d as td
 
 from upvfab_design_tools.core import CauchyIndexModel, Material
-
-
+from upvfab_design_tools.core.materials import SILICON_NITRIDE, BCB, THERMAL_SILICON_DIOXIDE
 WAVELENGTH_MIN_UM = 1.5
 WAVELENGTH_MAX_UM = 1.6
 
-cauchy_model = CauchyIndexModel(
-    A=1.961864,
-    B=2.257584,
-    C=0.0,
-    wavelength_min_um=WAVELENGTH_MIN_UM,
-    wavelength_max_um=WAVELENGTH_MAX_UM,
-)
+# cauchy_model = CauchyIndexModel(
+#     A=1.961864,
+#     B=2.257584,
+#     C=0.0,
+#     wavelength_min_um=WAVELENGTH_MIN_UM,
+#     wavelength_max_um=WAVELENGTH_MAX_UM,
+# )
 
-material = Material(
-    name="Experimental Cauchy Material",
-    index_model=cauchy_model,
-    description="Material defined from experimentally fitted Cauchy coefficients.",
-)
+# material = Material(
+#     name="Experimental Cauchy Material",
+#     index_model=cauchy_model,
+#     description="Material defined from experimentally fitted Cauchy coefficients.",
+# )
+material = SILICON_NITRIDE
 
 tidy_medium, rms_error = material.fit_tidy(
-    num_samples=21,
+    num_samples=201,
     wavelength_min_um=WAVELENGTH_MIN_UM,
     wavelength_max_um=WAVELENGTH_MAX_UM,
     max_num_poles=2,
@@ -52,10 +52,10 @@ k_values = np.asarray(k_values)
 
 print(f"Pole-residue RMS error: {rms_error:.9g}")
 print(f"Number of fitted poles: {len(tidy_medium.poles)}")
-print("n values:")
-print(n_values)
-print("k values:")
-print(k_values)
+# print("n values:")
+# print(n_values)
+# print("k values:")
+# print(k_values)
 
 fig, axes = plt.subplots(2, 1, figsize=(7, 7), sharex=True)
 
