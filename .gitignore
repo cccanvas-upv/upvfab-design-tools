@@ -15,12 +15,9 @@ wheels/
 *.hdf5.gz
 data/
 
-AGENTS.md
-
 .agents/
 .codex/
 src/upvfab_design_tools/_temp/
 .pytest_cache/
 .ruff_cache/
 .vscode/
-COUPLERS_PMM_EME_FDTD.ipynb
