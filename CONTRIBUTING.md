@@ -7,7 +7,7 @@ Esta guía describe cómo trabajar en equipo y mantener resultados útiles acces
 1. Sincroniza la rama base y revisa las instrucciones anteriores, el estado de Git y `work-in-progress/`.
 2. Crea una rama por tarea. Anota en el README de tu carpeta de trabajo el alcance, archivos principales y dependencias con otros cambios.
 3. Mantén prototipos temporales en `work-in-progress/<identificador>/`. Usa un identificador estable acordado por el equipo (por ejemplo, usuario de GitHub). Copia [`work-in-progress/_template/README.md`](work-in-progress/_template/README.md).
-4. El trabajo colaborativo de investigación y desarrollo permanece en `work-in-progress/` hasta que se revise. `examples/` y `examples/notebooks/` son material educativo dirigido a usuarios externos; Camilo es responsable de su contenido y curación. Coordina con él cualquier cambio allí.
+4. El trabajo colaborativo de investigación y desarrollo permanece en `work-in-progress/` hasta que se revise. `examples/` y `examples/notebooks/` son material educativo dirigido a usuarios externos.
 5. Si un resultado de colaboración es reutilizable, promuévelo a `library/` con una ficha revisada que explique el resultado y permita reproducirlo. Abre un PR enfocado que explique decisión, evidencia, reproducción y cualquier cambio de API; luego retira o archiva el prototipo.
 6. No edites silenciosamente el prototipo de otra persona; coordina una transferencia o colaboración explícita.
 

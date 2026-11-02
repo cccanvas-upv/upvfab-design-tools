@@ -32,6 +32,8 @@ Las dependencias opcionales y flujos de instalación están definidos en [`pypro
 
 Para agentes, empieza por `AGENTS.md`; las reglas técnicas viven en `docs/architecture.md` y el flujo de equipo en `CONTRIBUTING.md`. Para el estado vigente de la API, la fuente es el código de `src/`. `examples/` es material de aprendizaje para usuarios externos y no es el espacio de trabajo colaborativo de la biblioteca. Los resultados de colaboración que deban conservarse se desarrollan en `work-in-progress/` y, una vez revisados, se documentan en `library/`.
 
+Los cambios relevantes para usuarios se resumen en [`CHANGELOG.md`](./CHANGELOG.md), bajo `Unreleased` hasta que se publique una versión.
+
 ## Datos de simulación
 
 Los archivos grandes de resultados (por ejemplo HDF5) no se versionan automáticamente: `data/` está ignorado para evitar commits accidentales de artefactos pesados. Para compartirlos, acuerden un almacenamiento común y registren en la biblioteca el enlace/ubicación, nombre de archivo, fecha y parámetros de generación. Si un dataset pequeño debe versionarse, discútanlo antes y consideren Git LFS.

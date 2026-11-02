@@ -52,56 +52,73 @@ Recommended import style:
 import upvfab_design_tools as udt
 ```
 
-## Expected repository structure
+## Current repository structure
 
-The repository uses a `src/` layout:
+The package uses a `src/` layout. This tree reflects the current repository;
+planned modules are described separately and should not be treated as existing
+APIs:
 
 ```text
 upvfab-design-tools/
 ├── AGENTS.md
+├── CHANGELOG.md
+├── CONTRIBUTING.md
 ├── README.md
+├── .python-version
 ├── pyproject.toml
-├── .gitignore
+├── uv.lock
+├── docs/
+│   └── architecture.md
 ├── examples/
+│   ├── core/
+│   ├── eme/
+│   ├── fdtd/
+│   ├── modesolver/
 │   └── notebooks/
-├── tests/
-└── src/
-    └── upvfab_design_tools/
-        ├── __init__.py
-        ├── core/
-        │   ├── __init__.py
-        │   ├── materials.py
-        │   ├── geometry.py
-        │   ├── cross_section.py
-        │   ├── waveguides.py
-        │   ├── visualization.py
-        │   └── units.py
-        ├── modesolver/
-        │   ├── __init__.py
-        │   ├── base.py
-        │   ├── results.py
-        │   ├── femwell_solver.py
-        │   └── visualization.py
-        ├── eme/
-        │   ├── __init__.py
-        │   ├── solver.py
-        │   └── sections.py
-        ├── tidy3d_plugin/
-        │   ├── __init__.py
-        │   ├── simulation.py
-        │   └── geometry_export.py
-        └── components/
-            ├── __init__.py
-            └── mmi/
-                ├── __init__.py
-                ├── geometry.py
-                ├── design.py
-                ├── simulation.py
-                ├── sweep.py
-                └── visualization.py
+├── library/
+│   └── README.md
+├── src/
+│   └── upvfab_design_tools/
+│       ├── __init__.py
+│       ├── components/
+│       │   ├── __init__.py
+│       │   └── mmi/
+│       │       └── __init__.py
+│       ├── core/
+│       │   ├── __init__.py
+│       │   ├── cross_section.py
+│       │   ├── geometry.py
+│       │   ├── materials.py
+│       │   ├── visualization.py
+│       │   └── waveguides.py
+│       ├── eme/
+│       │   ├── __init__.py
+│       │   ├── overlap.py
+│       │   ├── results.py
+│       │   ├── solver.py
+│       │   └── visualization.py
+│       ├── modesolver/
+│       │   ├── __init__.py
+│       │   ├── base.py
+│       │   ├── femwell_solver.py
+│       │   ├── postprocessing.py
+│       │   ├── results.py
+│       │   ├── tidy3d_solver.py
+│       │   └── visualization.py
+│       └── tidy3d_plugin/
+│           ├── __init__.py
+│           ├── config.py
+│           ├── conversion.py
+│           └── fdtd.py
+└── work-in-progress/
+    ├── README.md
+    └── _template/
+        └── README.md
 ```
 
-The package may grow, but preserve this separation of concerns.
+The repository also has a root `.gitignore` and `pyproject.toml`. Large local
+simulation outputs under `data/` are intentionally excluded from Git. The
+package may grow, but preserve this separation of concerns.
 
 ## Core architectural principles
 
@@ -122,7 +139,7 @@ Useful mental model:
 core/                -> what structure/material system is being simulated
 modesolver/          -> how modes are computed
 modesolver/femwell   -> how the generic cross-section is converted to FEMWELL
-modesolver/tidy3d    -> future equivalent backend using Tidy3D
+modesolver/tidy3d    -> Tidy3D implementation of the generic mode-solver interface
 eme/                 -> how generic modes are propagated/coupled
 components/mmi/      -> how MMI structures are designed using core + solvers
 ```
@@ -935,9 +952,7 @@ et_xy = plot_basis.project(et_basis.interpolate(et))
 
 The old implementation plotted `Ex` and `Ey` from FEMWELL modes this way. Preserve that behavior but adapt it to the generic `Mode` wrapper through `mode.raw`.
 
-For future Tidy3D support, detect `mode.backend == "tidy3d"` and implement a separate extraction path.
-
-Current Tidy3D mode visualization is supported through the same public plotting
+Tidy3D mode visualization is supported through the same public plotting
 functions used for FEMWELL:
 
 - `plot_mode(...)`
@@ -1093,18 +1108,20 @@ Do not make Qt a required dependency of the package.
 
 These are recent working conventions that should be preserved unless Camilo explicitly changes them.
 
-### Example-first validation
+### Examples and validation
 
-Examples are educational material for external users, maintained and curated by
-Camilo. Existing scripts are transitional and may be reset after a few weeks.
-Keep examples organized by module area:
+`examples/` and `examples/notebooks/` are educational material for external
+users, maintained exclusively by Camilo. The existing content is transitional:
+it will be kept for a few weeks and then reset to retain selected user-facing
+examples. The current folders are `core/`, `eme/`, `fdtd/`, `modesolver/`,
+and `notebooks/`.
 
-- `examples/core/` for materials, geometry, cross-section, and waveguide checks.
-- `examples/modesolver/` for mode-solver examples such as
-  `examples/modesolver/test_modesolver.py`.
-- `examples/eme/` for eigenmode-expansion examples.
-
-Formal tests in `tests/` can be added later, but do not assume new validation code should go there unless requested. When asked to add a quick check or visual smoke test during the current development phase, prefer updating the relevant example script.
+Do not treat examples as the default location for collaborative development or
+package validation, and do not modify or reorganize them without Camilo's explicit
+request. During the transition, existing scripts may still be run as they are;
+that does not make them the target for new validation work. The location and
+method for validation should be agreed as part of each task and must not conflict
+with the ownership of `examples/`.
 
 ### Visualization layers to preserve
 
@@ -1142,7 +1159,7 @@ Current module responsibilities are:
   sampled bases.
 - `eme/visualization.py`: reconstructed propagation plots of `|E(x, z)|^2`.
 - `modesolver/postprocessing.py`: backend-specific extraction of sampled mode
-  profiles, initially for FEMWELL.
+  profiles for FEMWELL and Tidy3D.
 
 The backend-neutral contract between `modesolver/` and `eme/` is:
 
@@ -1159,10 +1176,9 @@ should raise a clear `NotImplementedError` from profile sampling rather than
 failing later inside EME.
 
 Currently supported profile-sampling backends are exposed through
-`modesolver.SUPPORTED_PROFILE_SAMPLING_BACKENDS`. At this stage the list is
-expected to contain FEMWELL only. When Tidy3D mode solving is added, the next
-step is to implement the Tidy3D raw-field interpreter for
-`sample_mode_profile()` / `sample_mode_profiles()`.
+`modesolver.SUPPORTED_PROFILE_SAMPLING_BACKENDS`; the implementation supports
+FEMWELL and Tidy3D through `sample_mode_profile()` /
+`sample_mode_profiles()`.
 
 For scalar 1D excitation, use the normalized complex inner product:
 
@@ -1200,12 +1216,13 @@ increasing `x_um` grid and normalized row-by-row before the overlap calculation.
 This scalar basis-change approximation is the current building block for
 stepwise EME examples such as tapers.
 
-For non-uniform devices such as tapers, the current recommended example-first
-approach is to discretize the geometry into a list of uniform sections, solve
-the modes of each section, propagate inside each section, and project the
-amplitudes to the next section basis using `modal_overlap_matrix`. Keep this in
-`examples/eme/` until the API feels stable enough to promote into a reusable
-multi-section EME module.
+For non-uniform devices such as tapers, the current exploratory approach is to
+discretize the geometry into a list of uniform sections, solve the modes of each
+section, propagate inside each section, and project the amplitudes to the next
+section basis using `modal_overlap_matrix`. Keep exploratory collaborative work
+in `work-in-progress/`; do not use the user-facing `examples/` tree as a staging
+area. Promote a stable reusable solver to `eme/` only after its API and scope
+have been agreed.
 
 Coherent field reconstruction must combine the same field component for every
 mode. For a TE family use `Ex`; for a TM family use `Ey`. Automatic component
@@ -1215,8 +1232,9 @@ a clear error if it would mix Ex and Ey in one reconstructed scalar field.
 The initial visualization follows the earlier EME implementation: propagation
 distance `z` is horizontal, transverse position `x` is vertical, and color
 shows `|E(x, z)|^2`. Keep the colormap configurable. Component extraction and
-FEMWELL field probing belong outside `eme/` so that future Tidy3D modes can use
-the same EME solver and result objects.
+backend-specific field sampling belong outside `eme/` in
+`modesolver/postprocessing.py`; FEMWELL and Tidy3D currently use the same EME
+solver and result objects.
 
 ## Future `components/mmi/` direction
 
