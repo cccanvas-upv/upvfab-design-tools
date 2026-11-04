@@ -32,7 +32,7 @@ LOAD_TIDY3D_DATA = False
 
 
 TIDY3D_TASK_NAME = (
-    "mmi_1x4_Lememinus1_wt1.5_dy0.05_elipso_sweep"
+    "mmi_1x4_Lememinus1_wt1.5_elipso_sweep"
 )
 
 TIDY3D_DATA_PATH = (
@@ -137,7 +137,7 @@ MODE_PLANE_Y_SPAN_UM = (
 # Deben estar ordenadas de abajo hacia arriba:
 # y1 < y2 < y3 < y4
 
-DY = 0.05
+DY = 0.0
 
 
 OUTPUT_Y_POSITIONS_UM = (
