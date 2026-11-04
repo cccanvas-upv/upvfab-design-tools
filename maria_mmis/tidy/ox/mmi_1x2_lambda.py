@@ -26,9 +26,9 @@ from upvfab_design_tools.tidy3d_plugin import (
 )
 
 
-RUN_TIDY3D_CLOUD = True
+RUN_TIDY3D_CLOUD = False
 ESTIMATE_TIDY3D_COST = False
-LOAD_TIDY3D_DATA = False
+LOAD_TIDY3D_DATA = True
 
 
 TIDY3D_TASK_NAME = (
