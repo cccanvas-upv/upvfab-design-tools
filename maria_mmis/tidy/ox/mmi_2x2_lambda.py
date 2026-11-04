@@ -31,28 +31,12 @@ ESTIMATE_TIDY3D_COST = False
 LOAD_TIDY3D_DATA = True
 
 TIDY3D_TASK_NAME = (
-    "mmi_2x2_Lememinus1.4_dy0.12_wt2_sweep"
+    "mmi_2x2_sweep"
 )
 
 TIDY3D_DATA_PATH = (
     f"data/{TIDY3D_TASK_NAME}.hdf5"
 )
-
-
-# ============================================================
-# MATERIAL BACKEND
-# ============================================================
-
-TIDY3D_MATERIAL_BACKEND = "upvfab"
-
-# from upvfab_design_tools.tidy3d_plugin import (
-#     conversion as tidy_conversion,
-# )
-
-# tidy_conversion.TIDY3D_MATERIAL_BACKEND = (
-#     TIDY3D_MATERIAL_BACKEND
-# )
-
 
 # ============================================================
 # WAVELENGTH SWEEP
@@ -87,21 +71,19 @@ BANDWIDTH_UM = (
 # ============================================================
 
 CORE_HEIGHT_UM = 0.3
-MMI_WIDTH_UM = 8.0
+MMI_WIDTH_UM = 10
 
 
 # Resultado optimizado con EME + Tidy mode solver
 
-MMI_LENGTH_UM = (
-    49.1895
-    - 1.4
-)
+MMI_LENGTH_UM = 74.488
+
 
 
 ACCESS_WIDTH_UM = 1.0
 
 
-DY_UM = 0.12
+DY_UM = 0.18
 
 
 # +/- (Wmmi / 6 + dy)
@@ -119,7 +101,7 @@ STRAIGHT_IO_LENGTH_UM = 2.0
 
 # Longitud del taper
 
-TAPER_LENGTH_UM = 15.0
+TAPER_LENGTH_UM = 30.0
 
 
 # Longitud total a cada lado del MMI
@@ -132,7 +114,7 @@ IO_LENGTH_UM = (
 
 # Anchura del taper
 
-TAPER_WIDTH_UM = 2.0
+TAPER_WIDTH_UM = 2.6
 
 
 INPUT_PORT = "bottom"
@@ -225,29 +207,28 @@ polygons = mmi_2x2_vertices(
 
     io_length_um=IO_LENGTH_UM,
 
-    straight_io_length_um=(
-        STRAIGHT_IO_LENGTH_UM
-    ),
+    straight_io_length_um=
+        STRAIGHT_IO_LENGTH_UM,
 
-    io_y_position_um=(
+    io_y_position_um=
         IO_Y_POSITION_UM
-    ),
+    ,
 
-    access_width_um=(
+    access_width_um=
         ACCESS_WIDTH_UM
-    ),
+    ,
 
-    taper_width_um=(
+    taper_width_um=
         TAPER_WIDTH_UM
-    ),
+    ,
 
-    mmi_width_input_um=(
+    mmi_width_input_um=
         MMI_WIDTH_UM
-    ),
+    ,
 
-    mmi_width_center_um=(
+    mmi_width_center_um=
         MMI_WIDTH_UM
-    ),
+    ,
 )
 
 
@@ -1009,7 +990,7 @@ if sim_data is not None:
 
     COUPLING_TARGET = 0.50
 
-    COUPLING_TOLERANCE = 0.01
+    COUPLING_TOLERANCE = 0.02
 
 
     lower_limit = (
