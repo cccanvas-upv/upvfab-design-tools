@@ -26,7 +26,7 @@ LOAD_TIDY3D_DATA = False
 INPUT_CONFIGURATION = "hybrid"  # "top", "bottom", "hybrid"
 DELTA_PHI_IN_DEG = 0.0
 
-TIDY3D_TASK_NAME = f"mmi_3x3_Lminus2.2_dy0.09_wt1.9_{INPUT_CONFIGURATION}"
+TIDY3D_TASK_NAME = f"mmi_3x3_Lminus2_dy0.09_wt1.9_{INPUT_CONFIGURATION}"
 TIDY3D_DATA_PATH = f"data/{TIDY3D_TASK_NAME}.hdf5"
 
 
