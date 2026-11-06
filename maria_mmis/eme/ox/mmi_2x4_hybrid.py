@@ -31,7 +31,7 @@ from upvfab_design_tools.modesolver import (
 MODE_SOLVER_BACKEND: Literal["femwell","tidy",] = "tidy"
 
 
-INPUT_CONFIGURATION: Literal["input_0", "input_1", "hybrid"] = "hybrid"
+INPUT_CONFIGURATION: Literal["input_0", "input_1", "hybrid"] = "input_1"
 
 # Fase del input 1 respecto al input 0
 DELTA_PHI_IN_DEG = 0.0
