@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np
-
+from pathlib import Path
 from upvfab_design_tools.core.materials import (
     SILICON_NITRIDE,
     THERMAL_SILICON_DIOXIDE,
@@ -23,12 +23,21 @@ RUN_TIDY3D_CLOUD = True
 ESTIMATE_TIDY3D_COST = False
 LOAD_TIDY3D_DATA = False
 
-INPUT_CONFIGURATION = "hybrid"  # "top", "bottom", "hybrid"
+INPUT_CONFIGURATION = "bottom"  # "top", "bottom", "hybrid"
 DELTA_PHI_IN_DEG = 0.0
 
 TIDY3D_TASK_NAME = f"mmi_3x3_Lminus2_dy0.09_wt1.9_{INPUT_CONFIGURATION}"
 TIDY3D_DATA_PATH = f"data/{TIDY3D_TASK_NAME}.hdf5"
 
+TOP_DATA_PATH = (
+    "data/"
+    "mmi_3x3_Lminus2_dy0.09_wt1.9_top.hdf5"
+)
+
+BOTTOM_DATA_PATH = (
+    "data/"
+    "mmi_3x3_Lminus2_dy0.09_wt1.9_bottom.hdf5"
+)
 
 # PARAMETROS DISPOSITIVO
 
@@ -147,6 +156,15 @@ if RUN_TIDY3D_CLOUD:
         verbose=True,
     )
 
+def wrap_phase_deg(
+    phase_deg: float | np.ndarray,
+):
+    """Wrap phase to [-180, 180) degrees."""
+
+    return (
+        phase_deg + 180.0
+    ) % 360.0 - 180.0
+
 
 # POSTPROCESADO
 
@@ -200,6 +218,299 @@ if sim_data is not None:
         polygons=polygons,
     )
     ax.set_title(f"FDTD |Ey| - {TIDY3D_TASK_NAME}")
+
+# ============================================================
+# PHASE CHARACTERIZATION - 120 DEGREE HYBRID
+# ============================================================
+
+top_path = Path(TOP_DATA_PATH)
+bottom_path = Path(BOTTOM_DATA_PATH)
+
+
+if top_path.exists() and bottom_path.exists():
+
+    sim_data_top = load_tidy3d_simulation_data(
+        TOP_DATA_PATH
+    )
+
+    sim_data_bottom = load_tidy3d_simulation_data(
+        BOTTOM_DATA_PATH
+    )
+
+
+    names = (
+        "bottom",
+        "center",
+        "top",
+    )
+
+
+    # ========================================================
+    # COMPLEX AMPLITUDES - TOP INPUT
+    # ========================================================
+
+    amps_top = np.array([
+        complex(
+            sim_data_top[f"mode_{name}"].amps
+            .sel(
+                direction="+",
+                mode_index=0,
+            )
+            .isel(f=0)
+            .values.squeeze()
+        )
+        for name in names
+    ])
+
+
+    # ========================================================
+    # COMPLEX AMPLITUDES - BOTTOM INPUT
+    # ========================================================
+
+    amps_bottom = np.array([
+        complex(
+            sim_data_bottom[f"mode_{name}"].amps
+            .sel(
+                direction="+",
+                mode_index=0,
+            )
+            .isel(f=0)
+            .values.squeeze()
+        )
+        for name in names
+    ])
+
+
+    # ========================================================
+    # CHARACTERISTIC PHASE OF EACH OUTPUT
+    # ========================================================
+    #
+    # phi_k =
+    # arg(
+    #     H_k,top
+    #     * conj(H_k,bottom)
+    # )
+    #
+    # Order:
+    #
+    # [bottom, center, top]
+
+    phi_deg = np.degrees(
+        np.angle(
+            amps_top
+            * np.conj(amps_bottom)
+        )
+    )
+
+
+    phi_bottom_deg = phi_deg[0]
+    phi_center_deg = phi_deg[1]
+    phi_top_deg = phi_deg[2]
+
+
+    # ========================================================
+    # PHASES RELATIVE TO CENTER
+    # ========================================================
+
+    phi_rel_center_deg = wrap_phase_deg(
+        phi_deg
+        - phi_center_deg
+    )
+
+
+    phase_bottom_center_deg = (
+        phi_rel_center_deg[0]
+    )
+
+    phase_center_center_deg = 0.0
+
+    phase_top_center_deg = (
+        phi_rel_center_deg[2]
+    )
+
+
+    # ========================================================
+    # PAIRWISE PHASE RELATIONS
+    # ========================================================
+
+    phase_bottom_center_deg = wrap_phase_deg(
+        phi_bottom_deg
+        - phi_center_deg
+    )
+
+    phase_center_top_deg = wrap_phase_deg(
+        phi_center_deg
+        - phi_top_deg
+    )
+
+    phase_top_bottom_deg = wrap_phase_deg(
+        phi_top_deg
+        - phi_bottom_deg
+    )
+
+
+    # ========================================================
+    # PHASE ERRORS
+    # ========================================================
+    #
+    # In an ideal 120-degree hybrid, every pair of
+    # characteristic phases is separated by 120 deg
+    # on the phase circle.
+    #
+    # Therefore the sign can be +120 or -120.
+
+    error_bottom_center_deg = (
+        abs(
+            abs(phase_bottom_center_deg)
+            - 120.0
+        )
+    )
+
+    error_center_top_deg = (
+        abs(
+            abs(phase_center_top_deg)
+            - 120.0
+        )
+    )
+
+    error_top_bottom_deg = (
+        abs(
+            abs(phase_top_bottom_deg)
+            - 120.0
+        )
+    )
+
+
+    # ========================================================
+    # PRINT
+    # ========================================================
+
+    print(
+        "\n"
+        + "=" * 65
+    )
+
+    print(
+        "FDTD MMI 3x3 - 120-DEGREE "
+        "PHASE CHARACTERIZATION"
+    )
+
+    print(
+        "=" * 65
+    )
+
+
+    print(
+        "\n--- CHARACTERISTIC PHASES ---"
+    )
+
+    print(
+        f"phi_bottom = "
+        f"{phi_bottom_deg:+.4f} deg"
+    )
+
+    print(
+        f"phi_center = "
+        f"{phi_center_deg:+.4f} deg"
+    )
+
+    print(
+        f"phi_top    = "
+        f"{phi_top_deg:+.4f} deg"
+    )
+
+
+    print(
+        "\n--- PHASES RELATIVE TO CENTER ---"
+    )
+
+    print(
+        f"bottom - center = "
+        f"{phase_bottom_center_deg:+.4f} deg"
+    )
+
+    print(
+        f"center - center = "
+        f"{phase_center_center_deg:+.4f} deg"
+    )
+
+    print(
+        f"top - center    = "
+        f"{phase_top_center_deg:+.4f} deg"
+    )
+
+
+    print(
+        "\nIdeal relative phases:"
+    )
+
+    print(
+        "0 deg, +120 deg, -120 deg "
+        "(up to ordering/sign convention)"
+    )
+
+
+    print(
+        "\n--- PAIRWISE PHASE RELATIONS ---"
+    )
+
+    print(
+        f"bottom - center = "
+        f"{phase_bottom_center_deg:+.4f} deg"
+    )
+
+    print(
+        f"center - top = "
+        f"{phase_center_top_deg:+.4f} deg"
+    )
+
+    print(
+        f"top - bottom = "
+        f"{phase_top_bottom_deg:+.4f} deg"
+    )
+
+
+    print(
+        "\n--- PHASE ERRORS ---"
+    )
+
+    print(
+        f"bottom-center error = "
+        f"{error_bottom_center_deg:.4f} deg"
+    )
+
+    print(
+        f"center-top error = "
+        f"{error_center_top_deg:.4f} deg"
+    )
+
+    print(
+        f"top-bottom error = "
+        f"{error_top_bottom_deg:.4f} deg"
+    )
+
+
+else:
+
+    print(
+        "\n--- 120-DEGREE PHASE CHARACTERIZATION ---"
+    )
+
+    if not top_path.exists():
+
+        print(
+            f"Missing top simulation: "
+            f"{TOP_DATA_PATH}"
+        )
+
+    if not bottom_path.exists():
+
+        print(
+            f"Missing bottom simulation: "
+            f"{BOTTOM_DATA_PATH}"
+        )
+
+
 
 PORT_POSITIONS_UM = np.array(
     [-PORT_POSITION_UM, 0.0, +PORT_POSITION_UM]
