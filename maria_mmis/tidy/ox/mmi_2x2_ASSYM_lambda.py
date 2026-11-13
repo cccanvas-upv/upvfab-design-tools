@@ -223,7 +223,7 @@ sim = build_mmi_2x2_asymmetric_fdtd_simulation(
     mode_plane_y_span_um=MODE_PLANE_Y_SPAN_UM,
 
     min_steps_per_wvl=16,
-    run_time_s=5e-12,
+    run_time_s=5.5e-12,
 )
 
 print("\n--- MATERIAL CHECK ---")

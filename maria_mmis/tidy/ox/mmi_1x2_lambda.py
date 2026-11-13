@@ -304,7 +304,7 @@ sim = build_mmi_1x2_fdtd_simulation(
         MODE_PLANE_Y_SPAN_UM
     ),
 
-    min_steps_per_wvl=12,
+    min_steps_per_wvl=16,
 
     run_time_s=5e-12,
 )
