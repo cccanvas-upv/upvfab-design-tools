@@ -21,14 +21,14 @@ from upvfab_design_tools.tidy3d_plugin import (
 )
 
 
-RUN_TIDY3D_CLOUD = False
+RUN_TIDY3D_CLOUD = True
 ESTIMATE_TIDY3D_COST = False
 LOAD_TIDY3D_DATA = False
 
 INPUT_CONFIGURATION = "hybrid"  # "top", "bottom", "hybrid"
 DELTA_PHI_IN_DEG = 0.0
 
-TIDY3D_TASK_BASE = "mmi_2x4_Lminus4.8_dy0_wt3_mins16"
+TIDY3D_TASK_BASE = "mmi_2x4_Lminus4.2_dy0_wt2"
 
 TIDY3D_TASK_NAME = f"{TIDY3D_TASK_BASE}_{INPUT_CONFIGURATION}"
 TIDY3D_DATA_PATH = f"data/{TIDY3D_TASK_NAME}.hdf5"
@@ -42,47 +42,29 @@ WAVELENGTH_UM = 1.55
 CORE_HEIGHT_UM = 0.30
 MMI_WIDTH_UM = 16.0
 
-MMI_LENGTH_UM = 281.350472 -4.8
+MMI_LENGTH_UM = 95.516824 -4.2
 
 ACCESS_WIDTH_UM = 1
-TAPER_WIDTH_UM = 3
+TAPER_WIDTH_UM = 2
 TAPER_LENGTH_UM = 20.0
 
 STRAIGHT_IO_LENGTH_UM = 2.0
 IO_LENGTH_UM = TAPER_LENGTH_UM + STRAIGHT_IO_LENGTH_UM
 
-DY = 0.0
-
-
-# ============================================================
-# POSICIONES DE LOS PUERTOS
-#
-# Convencion:
-#
-#               TOP
-#
-# P1 = +3W/8
-# P2 = +W/8        I1 = top
-# P3 = -W/8
-# P4 = -3W/8       I2 = bottom
-#
-#              BOTTOM
-#
-# input_y_positions_um = (top, bottom)
-# output_y_positions_um = (P1, P2, P3, P4)
-# ============================================================
+DY = 0.15
 
 INPUT_Y_POSITIONS_UM = np.array([
-    +MMI_WIDTH_UM / 6.0,
-    -MMI_WIDTH_UM / 6.0,
-])
+   +MMI_WIDTH_UM / 6.0 + DY ,
+    -MMI_WIDTH_UM / 6.0 - DY,
+   ])
+
 
 
 OUTPUT_Y_POSITIONS_UM = np.array([
-    +MMI_WIDTH_UM / 3.0,
-    +MMI_WIDTH_UM / 6.0,
-    -MMI_WIDTH_UM / 6.0,
-    -MMI_WIDTH_UM / 3.0,
+    +MMI_WIDTH_UM / 3.0 + DY,
+    +MMI_WIDTH_UM / 6.0 + DY,
+    -MMI_WIDTH_UM / 6.0 - DY,
+    -MMI_WIDTH_UM / 3.0 -DY,
 ])
 
 
@@ -135,7 +117,7 @@ sim = build_mmi_2x4_fdtd_simulation(
     source_offset_um=SOURCE_OFFSET_UM,
     monitor_offset_um=MONITOR_OFFSET_UM,
     mode_plane_y_span_um=MODE_PLANE_Y_SPAN_UM,
-    min_steps_per_wvl=18,
+    min_steps_per_wvl=16,
     run_time_s=5e-12,
 )
 
@@ -566,17 +548,17 @@ if top_path.exists() and bottom_path.exists():
 
     delta_phi_13_deg = wrap_phase_deg(
         phase_13_deg
-        - 90.0
+        -180
     )
 
     delta_phi_23_deg = wrap_phase_deg(
         phase_23_deg
-        - 180.0
+       
     )
 
     delta_phi_34_deg = wrap_phase_deg(
         phase_34_deg
-        - 90.0
+        - 180
     )
 
 
@@ -628,11 +610,11 @@ if top_path.exists() and bottom_path.exists():
     )
 
     print(
-        "P1 = 90 deg"
+        "P1 = 180 deg"
     )
 
     print(
-        "P2 = 180 deg"
+        "P2 = 0 deg"
     )
 
     print(
@@ -640,7 +622,7 @@ if top_path.exists() and bottom_path.exists():
     )
 
     print(
-        "P4 = 270 deg"
+        "P4 = 180 deg"
     )
 
 
@@ -651,19 +633,19 @@ if top_path.exists() and bottom_path.exists():
     print(
         f"phi1 - phi3 = "
         f"{phase_13_deg:+.4f} deg "
-        f"(ideal: +90 deg)"
+        f"(ideal: 180 deg)"
     )
 
     print(
         f"phi2 - phi3 = "
         f"{phase_23_deg:+.4f} deg "
-        f"(ideal: +/-180 deg)"
+        f"(ideal: 0 deg)"
     )
 
     print(
         f"phi3 - phi4 = "
         f"{phase_34_deg:+.4f} deg "
-        f"(ideal: +90 deg)"
+        f"(ideal: 180)"
     )
 
 
