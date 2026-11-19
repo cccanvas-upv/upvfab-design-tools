@@ -20,24 +20,32 @@ from upvfab_design_tools.tidy3d_plugin import (
 )
 
 
-# ============================================================
-# CONTROL
-# ============================================================
-
-RUN_TIDY3D_CLOUD = False
+RUN_TIDY3D_CLOUD = True
 ESTIMATE_TIDY3D_COST = False
-LOAD_TIDY3D_DATA = True
+LOAD_TIDY3D_DATA = False
 
-INPUT_CONFIGURATION = "hybrid"  # "top", "bottom", "hybrid"
+MIN_STEPS = 12
+RUN_TIME_S = 5e-12
+
+COMPARE_SIMULATIONS = True
+
+INPUT_CONFIGURATION = "top"
 DELTA_PHI_IN_DEG = 0.0
 
 TIDY3D_TASK_NAME = (
-    f"mmi_3x3_Lminus2.2_dy0.09_wt1.9_"
-    f"{INPUT_CONFIGURATION}_sweep"
+    f"mmi_3x3_Lminus2.2_dy0.09_wt1.9"
+    f"_{INPUT_CONFIGURATION}"
+    f"_phi{DELTA_PHI_IN_DEG:g}"
+    f"_N{MIN_STEPS}_T{RUN_TIME_S:.1e}"
 )
 
 TIDY3D_DATA_PATH = (
     f"data/{TIDY3D_TASK_NAME}.hdf5"
+)
+
+REFERENCE_RESULTS_PATH = (
+    "data/mmi_3x3_Lminus2.2_dy0.09_wt1.9"
+    "_top_phi0_N16_T5.0e-12_results.npz"
 )
 
 
@@ -278,9 +286,9 @@ sim = build_mmi_3x3_fdtd_simulation(
         MODE_PLANE_Y_SPAN_UM
     ),
 
-    min_steps_per_wvl=16,
+    min_steps_per_wvl=MIN_STEPS,
 
-    run_time_s=5e-12,
+    run_time_s=RUN_TIME_S,
 )
 
 
@@ -669,6 +677,52 @@ if sim_data is not None:
                     )
                 )
             )
+
+        # ========================================================
+    # SAVE SPECTRAL RESULTS
+    # ========================================================
+
+    from pathlib import Path
+
+    RESULTS_PATH = (
+        f"data/{TIDY3D_TASK_NAME}_results.npz"
+    )
+
+    Path(RESULTS_PATH).parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    splitting = np.array([
+        K["bottom"],
+        K["center"],
+        K["top"],
+    ])
+
+    phases = np.array([
+        relative_phase_deg["bottom"],
+        relative_phase_deg["center"],
+        relative_phase_deg["top"],
+    ])
+
+    np.savez(
+        RESULTS_PATH,
+        wavelength=wavelengths_um,
+        loss=excess_loss_db,
+        splitting=splitting,
+        phases=phases,
+        transmission=T_total,
+        min_steps=MIN_STEPS,
+        run_time_s=RUN_TIME_S,
+        input_configuration=INPUT_CONFIGURATION,
+        delta_phi_in_deg=DELTA_PHI_IN_DEG,
+        mmi_length_um=MMI_LENGTH_UM,
+        mmi_width_um=MMI_WIDTH_UM,
+    )
+
+    print(
+        f"\nSpectral results saved: {RESULTS_PATH}"
+    )
 
 
     # ========================================================
@@ -1193,6 +1247,174 @@ if sim_data is not None:
         f"FDTD |Ey| - "
         f"{TIDY3D_TASK_NAME}"
     )
+
+        # ========================================================
+    # CONVERGENCE COMPARISON
+    # ========================================================
+
+    if COMPARE_SIMULATIONS:
+
+        with np.load(REFERENCE_RESULTS_PATH) as reference:
+
+            reference_wl = reference["wavelength"]
+            reference_loss = reference["loss"]
+            reference_splitting = reference["splitting"]
+            reference_phases = reference["phases"]
+
+            reference_steps = int(reference["min_steps"])
+
+            # Check wavelength grids
+            if (
+                wavelengths_um.shape != reference_wl.shape
+                or not np.allclose(
+                    wavelengths_um,
+                    reference_wl,
+                    rtol=0,
+                    atol=1e-9,
+                )
+            ):
+                raise ValueError(
+                    "Wavelength grids do not match."
+                )
+
+            # Check configuration and geometry
+            if (
+                str(reference["input_configuration"])
+                != INPUT_CONFIGURATION
+                or not np.isclose(
+                    float(reference["delta_phi_in_deg"]),
+                    DELTA_PHI_IN_DEG,
+                )
+                or not np.isclose(
+                    float(reference["mmi_length_um"]),
+                    MMI_LENGTH_UM,
+                )
+                or not np.isclose(
+                    float(reference["mmi_width_um"]),
+                    MMI_WIDTH_UM,
+                )
+            ):
+                raise ValueError(
+                    "Reference geometry or input configuration mismatch."
+                )
+
+        # ====================================================
+        # DIFFERENCES
+        # ====================================================
+
+        delta_loss = (
+            excess_loss_db - reference_loss
+        )
+
+        delta_splitting = (
+            splitting - reference_splitting
+        )
+
+        # Wrapped phase differences [-180, 180]
+        delta_phases = (
+            (phases - reference_phases + 180)
+            % 360 - 180
+        )
+
+        # ====================================================
+        # NUMERICAL SUMMARY
+        # ====================================================
+
+        print("\n" + "=" * 60)
+        print("CONVERGENCE COMPARISON")
+        print("=" * 60)
+
+        print(f"Reference N = {reference_steps}")
+        print(f"Current N = {MIN_STEPS}")
+
+        print(
+            f"\nDelta EL at lambda0: "
+            f"{delta_loss[index_lambda0]:+.5f} dB"
+        )
+
+        print(
+            f"Max |Delta EL|: "
+            f"{np.max(np.abs(delta_loss)):.5f} dB"
+        )
+
+        print(
+            f"RMS Delta EL: "
+            f"{np.sqrt(np.mean(delta_loss**2)):.5f} dB"
+        )
+
+        print(
+            f"Max |Delta splitting|: "
+            f"{100*np.max(np.abs(delta_splitting)):.4f} pp"
+        )
+
+        print(
+            f"Max |Delta phase|: "
+            f"{np.max(np.abs(delta_phases)):.4f} deg"
+        )
+
+        # ====================================================
+        # EXCESS LOSS COMPARISON
+        # ====================================================
+
+        plt.figure(figsize=(8, 5))
+
+        plt.plot(
+            reference_wl,
+            reference_loss,
+            label=f"N = {reference_steps}",
+            linewidth=2,
+        )
+
+        plt.plot(
+            wavelengths_um,
+            excess_loss_db,
+            label=f"N = {MIN_STEPS}",
+            linewidth=2,
+        )
+
+        plt.axvline(
+            WAVELENGTH_UM,
+            linestyle="--",
+            linewidth=1,
+        )
+
+        plt.xlabel("Wavelength (µm)")
+        plt.ylabel("Excess loss (dB)")
+        plt.title("Convergence - Excess loss")
+        plt.grid(True, alpha=0.3)
+        plt.legend()
+        plt.tight_layout()
+
+        # ====================================================
+        # EXCESS LOSS DIFFERENCE
+        # ====================================================
+
+        plt.figure(figsize=(8, 4))
+
+        plt.plot(
+            wavelengths_um,
+            delta_loss,
+            linewidth=2,
+        )
+
+        plt.axhline(
+            0,
+            color="black",
+            linestyle="--",
+            linewidth=1,
+        )
+
+        plt.axvline(
+            WAVELENGTH_UM,
+            linestyle="--",
+            linewidth=1,
+        )
+
+        plt.xlabel("Wavelength (µm)")
+        plt.ylabel("Delta excess loss (dB)")
+        plt.title("Convergence - Excess loss difference")
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
 
 
 plt.show()

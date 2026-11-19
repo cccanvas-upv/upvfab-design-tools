@@ -30,15 +30,22 @@ RUN_TIDY3D_CLOUD = True
 ESTIMATE_TIDY3D_COST = False
 LOAD_TIDY3D_DATA = False
 
+MIN_STEPS = 24
+RUN_TIME_S = 5e-12
 
 TIDY3D_TASK_NAME = (
-    "mmi_1x4_Lememinus1_wt1.5_elipso_sweep"
+    f"mmi_1x4_Lememinus1_N{MIN_STEPS}"
 )
 
 TIDY3D_DATA_PATH = (
     f"data/{TIDY3D_TASK_NAME}.hdf5"
 )
 
+COMPARE_SIMULATIONS = True
+
+REFERENCE_RESULTS_PATH = (
+    "data/mmi_1x4_Lememinus1_N20_results.npz"
+)
 
 # ============================================================
 # WAVELENGTH SWEEP
@@ -305,9 +312,9 @@ sim = build_mmi_1x4_fdtd_simulation(
         MODE_PLANE_Y_SPAN_UM
     ),
 
-    min_steps_per_wvl=12,
+    min_steps_per_wvl=MIN_STEPS,
 
-    run_time_s=5e-12,
+    run_time_s=RUN_TIME_S,
 )
 
 
@@ -839,6 +846,34 @@ if sim_data is not None:
     relative_phases_deg = np.asarray(
         relative_phases_deg
     )
+
+    # ============================================================
+    # SAVE SPECTRAL RESULTS
+    # ============================================================
+
+    from pathlib import Path
+
+    RESULTS_PATH = (
+        f"data/{TIDY3D_TASK_NAME}_results.npz"
+    )
+
+    Path(RESULTS_PATH).parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    np.savez(
+        RESULTS_PATH,
+        wavelength=wavelengths_um,
+        loss=excess_loss_db,
+        splitting=np.array([
+            K_1, K_2, K_3, K_4
+        ]),
+        phases=relative_phases_deg,
+        transmission=T_total,
+    )
+
+    print(f"\nSpectral results saved: {RESULTS_PATH}")
 
 
     # ========================================================
@@ -1382,5 +1417,175 @@ if sim_data is not None:
         f"{TIDY3D_TASK_NAME}"
     )
 
+    # ============================================================
+# CONVERGENCE COMPARISON
+# ============================================================
+
+if COMPARE_SIMULATIONS:
+
+    reference = np.load(
+        REFERENCE_RESULTS_PATH
+    )
+
+    # Current simulation results
+    current_wl = wavelengths_um
+    current_loss = excess_loss_db
+    current_splitting = np.array([
+        K_1, K_2, K_3, K_4
+    ])
+    current_phases = relative_phases_deg
+
+    # Reference results
+    reference_wl = reference["wavelength"]
+    reference_loss = reference["loss"]
+    reference_splitting = reference["splitting"]
+    reference_phases = reference["phases"]
+
+    # Check wavelength grids
+    if (
+        current_wl.shape != reference_wl.shape
+        or not np.allclose(
+            current_wl,
+            reference_wl,
+            rtol=0,
+            atol=1e-9,
+        )
+    ):
+        raise ValueError(
+            "Wavelength grids do not match."
+        )
+
+    # ========================================================
+    # DIFFERENCES
+    # ========================================================
+
+    delta_loss = (
+        current_loss - reference_loss
+    )
+
+    delta_splitting = (
+        current_splitting - reference_splitting
+    )
+
+    # Wrapped phase difference [-180, 180]
+    delta_phases = (
+        (current_phases - reference_phases + 180)
+        % 360
+        - 180
+    )
+
+    index_lambda0 = np.argmin(
+        np.abs(
+            current_wl - WAVELENGTH_UM
+        )
+    )
+
+    # ========================================================
+    # NUMERICAL SUMMARY
+    # ========================================================
+
+    print(
+        "\n"
+        + "=" * 60
+    )
+    print("CONVERGENCE COMPARISON")
+    print("=" * 60)
+
+    print(
+        f"Reference: {REFERENCE_RESULTS_PATH}"
+    )
+
+    print(
+        f"Current: {TIDY3D_TASK_NAME}"
+    )
+
+    print(
+        f"\nDelta EL at lambda0: "
+        f"{delta_loss[index_lambda0]:+.5f} dB"
+    )
+
+    print(
+        f"Max |Delta EL|: "
+        f"{np.max(np.abs(delta_loss)):.5f} dB"
+    )
+
+    print(
+        f"RMS Delta EL: "
+        f"{np.sqrt(np.mean(delta_loss**2)):.5f} dB"
+    )
+
+    print(
+        f"Max |Delta splitting|: "
+        f"{100 * np.max(np.abs(delta_splitting)):.4f} pp"
+    )
+
+    print(
+        f"Max |Delta phase|: "
+        f"{np.max(np.abs(delta_phases)):.4f} deg"
+    )
+
+    # ========================================================
+    # EXCESS LOSS OVERLAY
+    # ========================================================
+
+    plt.figure(figsize=(8, 5))
+
+    plt.plot(
+        reference_wl,
+        reference_loss,
+        label="Reference",
+        linewidth=2,
+    )
+
+    plt.plot(
+        current_wl,
+        current_loss,
+        label=f"N = {MIN_STEPS}",
+        linewidth=2,
+    )
+
+    plt.axvline(
+        WAVELENGTH_UM,
+        linestyle="--",
+        linewidth=1,
+    )
+
+    plt.xlabel("Wavelength (µm)")
+    plt.ylabel("Excess loss (dB)")
+    plt.title("Convergence - Excess loss")
+    plt.grid(True, alpha=0.3)
+    plt.legend()
+    plt.tight_layout()
+
+    # ========================================================
+    # EXCESS LOSS DIFFERENCE
+    # ========================================================
+
+    plt.figure(figsize=(8, 4))
+
+    plt.plot(
+        current_wl,
+        delta_loss,
+        linewidth=2,
+    )
+
+    plt.axhline(
+        0,
+        color="black",
+        linestyle="--",
+        linewidth=1,
+    )
+
+    plt.axvline(
+        WAVELENGTH_UM,
+        linestyle="--",
+        linewidth=1,
+    )
+
+    plt.xlabel("Wavelength (µm)")
+    plt.ylabel("Delta excess loss (dB)")
+    plt.title("Convergence - Excess loss difference")
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
 
 plt.show()
