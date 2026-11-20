@@ -15,18 +15,18 @@ fitter_sin = FastDispersionFitter.from_file(file_name_sin, skiprows= 1, delimite
 # fitter_sin.plot()
 # plt.show()
 
-advanced_param = AdvancedFastFitterParam(weights=(1, 1))
-medium, rms_error = fitter_sio2.fit(max_num_poles=2, advanced_param=advanced_param, tolerance_rms=1e-4)
-fitter_sio2.plot(medium)
-plt.show()
+# advanced_param = AdvancedFastFitterParam(weights=(1, 1))
+# medium, rms_error = fitter_sio2.fit(max_num_poles=2, advanced_param=advanced_param, tolerance_rms=1e-4)
+# fitter_sio2.plot(medium)
+# plt.show()
 
 # fname = "/home/maria_romero/upvfab-design-tools/maria_materials/fits/sio2.json"
 # medium.to_file(fname)
 
 # advanced_param = AdvancedFastFitterParam(weights=(1, 1))
-# fitter_sio2_c = fitter_sio2.copy(update={"wvl_range": (1.5, 1.6)})
-# sio2, rms_error = fitter_sio2_c.fit(max_num_poles=1, advanced_param=advanced_param, tolerance_rms=1e-4)
-# fitter_sio2_c.plot(sio2)
+# fitter_sio2_o = fitter_sio2.copy(update={"wvl_range": (1.24, 1.38)})
+# sio2, rms_error = fitter_sio2_o.fit(max_num_poles=1, advanced_param=advanced_param, tolerance_rms=1e-4)
+# fitter_sio2_o.plot(sio2)
 # plt.show()
 
 # fname = "/home/maria_romero/upvfab-design-tools/maria_materials/fits/sio2_cband.json"
@@ -41,7 +41,7 @@ plt.show()
 # medium.to_file(fname)
 
 # advanced_param = AdvancedFastFitterParam(weights=(1, 1))
-# fitter_sin_c = fitter_sin.copy(update={"wvl_range": (1.5, 1.6)})
+# fitter_sin_c = fitter_sin.copy(update={"wvl_range": (1.24, 1.38)})
 # sin, rms_error = fitter_sin_c.fit(max_num_poles=2, advanced_param=advanced_param, tolerance_rms=1e-4)
 # fitter_sin_c.plot(sin)
 # plt.show()

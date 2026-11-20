@@ -344,6 +344,22 @@ AIR = Material(
     description="Air.",
 )
 
+# BANDA O 
+
+SILICON_NITRIDE_O_BAND = Material(
+    name="Silicon Nitride",
+    index_model=CauchyIndexModel(A=1.9662661,B=1.5894986,C=0.0,wavelength_min_um=1.24,wavelength_max_um=1.38),
+    aliases=("SiN_O", "Si3N4_O", "silicon_nitride_O"),
+    description="Silicon nitride O-band.",
+)
+
+THERMAL_SILICON_DIOXIDE_O_BAND = Material(
+    name="Thermal Silicon Dioxide",
+    index_model=CauchyIndexModel(A=1.4537747,B=0.7000546,C=-0.4899589,wavelength_min_um=1.24,wavelength_max_um=1.38),
+    aliases=("SiO2 thermal O-band", "thermal_sio2_o", "thermal oxide o-band"),
+    description="Thermal silicon dioxide O-band.",
+)
+
 MATERIALS: dict[str, Material] = {
     "air": AIR,
     "sin": SILICON_NITRIDE,
@@ -357,6 +373,11 @@ MATERIALS: dict[str, Material] = {
     "silicon": SILICON,
     "bcb": BCB,
     "benzocyclobutene": BCB,
+    "sin_o": SILICON_NITRIDE_O_BAND,
+    "si3n4_o": SILICON_NITRIDE_O_BAND,
+    "silicon_nitride_o": SILICON_NITRIDE_O_BAND,
+    "thermal_sio2_o": THERMAL_SILICON_DIOXIDE_O_BAND,
+    "sio2_thermal_o": THERMAL_SILICON_DIOXIDE_O_BAND,
 }
 
 def get_material(name: str) -> Material:

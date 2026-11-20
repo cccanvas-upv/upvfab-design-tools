@@ -18,6 +18,8 @@ from .materials import (
     SILICON,
     SILICON_NITRIDE,
     THERMAL_SILICON_DIOXIDE,
+    SILICON_NITRIDE_O_BAND,
+    THERMAL_SILICON_DIOXIDE_O_BAND,
     Material,
     get_material,
 )
@@ -30,6 +32,8 @@ __all__ = [
     "LPCVD_SILICON_DIOXIDE",
     "SILICON",
     "BCB",
+    "SILICON_NITRIDE_O_BAND",
+    "THERMAL_SILICON_DIOXIDE_O_BAND",
     "MATERIALS",
     "get_material",
     "Bounds2D",
