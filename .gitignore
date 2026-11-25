@@ -21,3 +21,4 @@ src/upvfab_design_tools/_temp/
 .pytest_cache/
 .ruff_cache/
 .vscode/
+examples/notebooks/GCs/*

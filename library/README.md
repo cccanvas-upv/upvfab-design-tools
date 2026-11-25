@@ -6,4 +6,14 @@ Las fichas resumen resultados de colaboración que también puedan consultar usu
 
 ## Entradas
 
-Todavía no hay resultados promovidos a esta biblioteca. El trabajo en curso se organiza en [`../work-in-progress/`](../work-in-progress/).
+- [MMI 1x2 SOI 220 nm, 50:50](../work-in-progress/cccanvas-upv/mmi-1x2-soi220-5050/README.md): trabajo de reproducción.
+
+- [MMI 2x2 SOI 220 nm, 50:50](../work-in-progress/cccanvas-upv/mmi-2x2-soi220-5050/README.md): trabajo de reproducción.
+
+- [MMI 2x2 SOI 220 nm, 85:15](../work-in-progress/cccanvas-upv/mmi-2x2-soi220-8515/README.md): trabajo de reproducción.
+
+- [MMI 2x2 SiN 300 nm, 85:15](../work-in-progress/cccanvas-upv/mmi-2x2-sin300-8515/README.md): trabajo de reproducción.
+
+- [MMI 2x2 SiN 300 nm con BCB, 85:15](../work-in-progress/cccanvas-upv/mmi-2x2-sin300-bcb-8515/README.md): trabajo de reproducción.
+
+El trabajo en curso se organiza en [work-in-progress](../work-in-progress/).
